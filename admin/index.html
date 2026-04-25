@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>대림글로벌 — 관리자 패널</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ======== 로그인 화면 ======== -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-emblem">대림</div>
+      <div>
+        <strong>대림글로벌</strong>
+        <span>관리자 패널</span>
+      </div>
+    </div>
+    <p class="login-desc">홈페이지 콘텐츠 관리 시스템</p>
+    <form id="loginForm">
+      <div class="lf-group">
+        <label>관리자 비밀번호</label>
+        <input type="password" id="loginPw" placeholder="비밀번호 입력" autocomplete="current-password">
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button type="submit" class="btn-login">로그인</button>
+    </form>
+    <a href="../" class="login-back">← 홈페이지로 돌아가기</a>
+  </div>
+</div>
+
+<!-- ======== 관리자 대시보드 ======== -->
+<div id="adminApp" class="admin-app" style="display:none">
+
+  <!-- 사이드바 -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-emblem">대림</div>
+      <div><strong>대림글로벌</strong><span>관리자</span></div>
+    </div>
+    <nav class="sb-nav">
+      <button class="sb-item active" data-tab="dashboard">📊 대시보드</button>
+      <button class="sb-item" data-tab="portfolio">🏠 시공사례 관리</button>
+      <button class="sb-item" data-tab="social">🌱 사회공헌 관리</button>
+      <button class="sb-item" data-tab="videos">🎬 동영상 관리</button>
+      <button class="sb-item" data-tab="content">✏️ 텍스트 편집</button>
+      <button class="sb-item" data-tab="settings">⚙️ 기본 설정</button>
+    </nav>
+    <div class="sb-bottom">
+      <a href="../" target="_blank" class="sb-preview">🔗 홈페이지 미리보기</a>
+      <button class="sb-logout" id="logoutBtn">로그아웃</button>
+    </div>
+  </aside>
+
+  <!-- 메인 콘텐츠 -->
+  <main class="admin-main">
+
+    <!-- 상단 헤더 -->
+    <div class="admin-topbar">
+      <h1 id="tabTitle">대시보드</h1>
+      <div class="topbar-right">
+        <span id="saveStatus" class="save-status"></span>
+        <a href="../" target="_blank" class="btn-sm btn-outline">홈페이지 보기</a>
+      </div>
+    </div>
+
+    <!-- ─── 대시보드 ─── -->
+    <div id="tab-dashboard" class="tab-content active">
+      <div class="dash-cards">
+        <div class="dash-card">
+          <div class="dc-icon">🏠</div>
+          <div><strong id="dc-portfolio-count">0</strong><span>시공사례</span></div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-icon">🌱</div>
+          <div><strong id="dc-social-count">0</strong><span>사회공헌 활동</span></div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-icon">🎬</div>
+          <div><strong id="dc-video-count">0</strong><span>등록 영상</span></div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-icon">📞</div>
+          <div><strong id="dc-phone">-</strong><span>대표 전화</span></div>
+        </div>
+      </div>
+      <div class="dash-guide">
+        <h3>📖 사용 가이드</h3>
+        <div class="guide-grid">
+          <div class="guide-item">
+            <span class="guide-num">1</span>
+            <div>
+              <strong>사진 업로드 방법</strong>
+              <p>이미지 URL을 입력하거나 파일을 직접 드래그&드롭 하세요.<br>구글 포토, 네이버 블로그 등에서 이미지 주소를 복사해서 붙여넣기 가능합니다.</p>
+            </div>
+          </div>
+          <div class="guide-item">
+            <span class="guide-num">2</span>
+            <div>
+              <strong>유튜브 동영상 추가</strong>
+              <p>유튜브 영상 URL에서 비디오 ID를 복사해주세요.<br>예: youtube.com/watch?v=<strong>ABC123</strong> → ABC123 입력</p>
+            </div>
+          </div>
+          <div class="guide-item">
+            <span class="guide-num">3</span>
+            <div>
+              <strong>변경사항 저장</strong>
+              <p>각 섹션에서 저장 버튼을 누르면 즉시 홈페이지에 반영됩니다.<br>저장 후 홈페이지 미리보기로 확인해보세요.</p>
+            </div>
+          </div>
+          <div class="guide-item">
+            <span class="guide-num">4</span>
+            <div>
+              <strong>백업 & 복원</strong>
+              <p>설정 탭에서 전체 데이터를 JSON으로 내보내거나 가져올 수 있습니다.<br>다른 기기에서도 동일한 내용을 사용할 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 시공사례 관리 ─── -->
+    <div id="tab-portfolio" class="tab-content">
+      <div class="tab-toolbar">
+        <button class="btn-primary" id="addPortfolioBtn">+ 새 시공사례 추가</button>
+      </div>
+
+      <!-- 추가/편집 폼 -->
+      <div class="edit-form" id="portfolioForm" style="display:none">
+        <h3 id="portfolioFormTitle">시공사례 추가</h3>
+        <div class="form-grid-2">
+          <div class="fg"><label>지역명 *</label><input type="text" id="pf-title" placeholder="예: 경기도 양평"></div>
+          <div class="fg"><label>평형 *</label><input type="text" id="pf-size" placeholder="예: 40평"></div>
+          <div class="fg"><label>타입</label><input type="text" id="pf-type" placeholder="예: 베토벤 40"></div>
+          <div class="fg"><label>스타일</label><input type="text" id="pf-style" placeholder="예: 모던 스타일"></div>
+        </div>
+        <div class="fg">
+          <label>대표 이미지</label>
+          <div class="img-upload-area" id="pf-img-area">
+            <div class="img-preview" id="pf-preview"><span>이미지 없음</span></div>
+            <div class="img-input-row">
+              <input type="text" id="pf-img-url" placeholder="이미지 URL 입력 (https://...)">
+              <button type="button" class="btn-sm btn-outline" onclick="applyImgUrl('pf')">URL 적용</button>
+            </div>
+            <div class="img-drop-zone" id="pf-drop">
+              <input type="file" accept="image/*" id="pf-file" hidden>
+              <label for="pf-file">📁 파일 선택 또는 여기에 드래그&드롭</label>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="pf-img-final">
+        <input type="hidden" id="pf-edit-id">
+        <div class="form-actions">
+          <button class="btn-primary" id="savePortfolioBtn">저장</button>
+          <button class="btn-outline" onclick="closeForm('portfolio')">취소</button>
+        </div>
+      </div>
+
+      <div class="items-list" id="portfolioList"></div>
+    </div>
+
+    <!-- ─── 사회공헌 관리 ─── -->
+    <div id="tab-social" class="tab-content">
+      <div class="notice-box green">
+        🌱 <strong>사회공헌 섹션 안내:</strong> 첫 번째 활동이 홈페이지 메인 대표 활동으로 표시됩니다. 나머지는 카드 형식으로 나열됩니다.
+      </div>
+      <div class="tab-toolbar">
+        <button class="btn-green" id="addSocialBtn">+ 사회공헌 활동 추가</button>
+      </div>
+
+      <div class="edit-form" id="socialForm" style="display:none">
+        <h3 id="socialFormTitle">사회공헌 활동 추가</h3>
+        <div class="form-grid-2">
+          <div class="fg"><label>활동 태그 *</label><input type="text" id="sf-tag" placeholder="예: 주거환경 개선"></div>
+          <div class="fg"><label>활동 날짜</label><input type="text" id="sf-date" placeholder="예: 2024.06"></div>
+        </div>
+        <div class="fg"><label>활동 제목 *</label><input type="text" id="sf-title" placeholder="예: 독거노인 주거환경 개선 사업"></div>
+        <div class="fg"><label>활동 설명 *</label><textarea id="sf-desc" rows="3" placeholder="활동 내용을 상세히 설명해주세요."></textarea></div>
+        <div class="fg">
+          <label>활동 사진</label>
+          <div class="img-upload-area">
+            <div class="img-preview" id="sf-preview"><span>이미지 없음</span></div>
+            <div class="img-input-row">
+              <input type="text" id="sf-img-url" placeholder="이미지 URL 입력 (https://...)">
+              <button type="button" class="btn-sm btn-outline" onclick="applyImgUrl('sf')">URL 적용</button>
+            </div>
+            <div class="img-drop-zone">
+              <input type="file" accept="image/*" id="sf-file" hidden>
+              <label for="sf-file">📁 파일 선택 또는 여기에 드래그&드롭</label>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="sf-img-final">
+        <input type="hidden" id="sf-edit-id">
+        <div class="form-actions">
+          <button class="btn-green" id="saveSocialBtn">저장</button>
+          <button class="btn-outline" onclick="closeForm('social')">취소</button>
+        </div>
+      </div>
+
+      <div class="items-list" id="socialList"></div>
+    </div>
+
+    <!-- ─── 동영상 관리 ─── -->
+    <div id="tab-videos" class="tab-content">
+      <div class="notice-box">
+        🎬 <strong>유튜브 영상 추가 방법:</strong> 유튜브 영상 주소(예: https://www.youtube.com/watch?v=<strong>XXXXX</strong>)에서 <strong>XXXXX</strong> 부분(비디오 ID)을 복사해 입력하세요.
+      </div>
+      <div class="tab-toolbar">
+        <button class="btn-primary" id="addVideoBtn">+ 동영상 추가</button>
+      </div>
+
+      <div class="edit-form" id="videoForm" style="display:none">
+        <h3 id="videoFormTitle">동영상 추가</h3>
+        <div class="fg"><label>영상 제목 *</label><input type="text" id="vf-title" placeholder="예: 베토벤 40평형 시공 현장"></div>
+        <div class="fg">
+          <label>유튜브 비디오 ID *</label>
+          <input type="text" id="vf-youtube-id" placeholder="예: dQw4w9WgXcQ">
+          <small>유튜브 URL: youtube.com/watch?v=<strong>여기 값</strong></small>
+        </div>
+        <div id="vf-preview-area" style="display:none">
+          <label>미리보기</label>
+          <div class="video-preview-thumb" id="vf-thumb"></div>
+        </div>
+        <input type="hidden" id="vf-edit-id">
+        <div class="form-actions">
+          <button class="btn-primary" onclick="previewVideo()">미리보기 확인</button>
+          <button class="btn-primary" id="saveVideoBtn">저장</button>
+          <button class="btn-outline" onclick="closeForm('video')">취소</button>
+        </div>
+      </div>
+
+      <div class="items-list" id="videoList"></div>
+    </div>
+
+    <!-- ─── 텍스트 편집 ─── -->
+    <div id="tab-content" class="tab-content">
+      <div class="notice-box">✏️ 홈페이지 각 섹션의 텍스트를 수정할 수 있습니다. 저장 후 즉시 반영됩니다.</div>
+
+      <div class="content-sections">
+
+        <div class="cs-block">
+          <h3>🏠 히어로 섹션</h3>
+          <div class="fg"><label>메인 타이틀 (HTML 가능)</label><textarea id="ct-heroTitle" rows="3">합리적 가격으로&lt;br&gt;&lt;em&gt;고품격 주택&lt;/em&gt;을&lt;br&gt;건축합니다</textarea></div>
+          <div class="fg"><label>영문 서브 타이틀</label><input type="text" id="ct-heroSub" value="We build high-quality homes at affordable prices"></div>
+        </div>
+
+        <div class="cs-block">
+          <h3>📋 회사소개 섹션</h3>
+          <div class="fg"><label>소개 타이틀 (HTML 가능)</label><textarea id="ct-aboutTitle" rows="2">대한민국을 대표하는&lt;br&gt;&lt;em&gt;전원주택 건축 명가&lt;/em&gt;</textarea></div>
+          <div class="fg"><label>리드 문구</label><input type="text" id="ct-aboutLead" value="(주)대림글로벌은 합리적 가격으로 고품격 주택을 건축하는 대한민국 대표 전원주택 시행사입니다."></div>
+          <div class="fg"><label>상세 설명</label><textarea id="ct-aboutDesc" rows="3">15년의 풍부한 경험과 전문 건축팀을 바탕으로 고객 한 분 한 분의 꿈을 현실로 만들어 드립니다. 투명한 공사비와 합리적인 가격으로 누구나 부담 없이 고품격 주택을 가질 수 있도록, 전국 어디서나 최선을 다하고 있습니다.</textarea></div>
+        </div>
+
+        <div class="cs-block green-block">
+          <h3>🌱 사회공헌 섹션 텍스트</h3>
+          <div class="fg"><label>리드 문구</label><textarea id="ct-socialLead" rows="2">집 한 채가 가족의 행복을 바꿉니다.
+대림글로벌은 건축의 가치를 사회와 함께 나눕니다.</textarea></div>
+          <div class="form-grid-3">
+            <div class="fg"><label>통계 1 (숫자)</label><input type="text" id="ct-socialStat1Num" value="50+"></div>
+            <div class="fg"><label>통계 1 (설명)</label><input type="text" id="ct-socialStat1Label" value="가구 주거환경 개선"></div>
+          </div>
+          <div class="form-grid-3">
+            <div class="fg"><label>통계 2 (숫자)</label><input type="text" id="ct-socialStat2Num" value="200+"></div>
+            <div class="fg"><label>통계 2 (설명)</label><input type="text" id="ct-socialStat2Label" value="봉사 참여 인원"></div>
+          </div>
+          <div class="form-grid-3">
+            <div class="fg"><label>통계 3 (숫자)</label><input type="text" id="ct-socialStat3Num" value="10+"></div>
+            <div class="fg"><label>통계 3 (설명)</label><input type="text" id="ct-socialStat3Label" value="협력 지역사회 기관"></div>
+          </div>
+          <div class="fg"><label>사명 선언 제목</label><input type="text" id="ct-missionTitle" value="대림글로벌의 사회공헌 약속"></div>
+          <div class="fg"><label>사명 선언 내용</label><textarea id="ct-missionDesc" rows="3">저희는 단순히 집을 짓는 회사가 아닙니다. 취약계층의 주거환경을 개선하고, 지역사회와 함께 성장하는 기업이 되고자 합니다. 매년 이익의 일부를 사회공헌 활동에 환원하며, 더 많은 가정에 따뜻한 보금자리를 선물하겠습니다.</textarea></div>
+        </div>
+
+        <div class="cs-block">
+          <h3>📢 CTA 배너</h3>
+          <div class="fg"><label>배너 제목</label><input type="text" id="ct-ctaTitle" value="지금 바로 무료 건축상담을 받아보세요"></div>
+          <div class="fg"><label>배너 설명</label><input type="text" id="ct-ctaDesc" value="전문 건축 상담사가 부지분석부터 설계, 비용까지 친절하게 안내해 드립니다"></div>
+        </div>
+
+        <div class="fg" style="margin-top:12px"><label>푸터 태그라인</label><textarea id="ct-footerTagline" rows="2">건축명가 (주)대림글로벌
+합리적 가격으로 고품격 주택을 건축합니다</textarea></div>
+
+      </div>
+
+      <div class="form-actions sticky-actions">
+        <button class="btn-primary" id="saveContentBtn">✓ 텍스트 전체 저장</button>
+      </div>
+    </div>
+
+    <!-- ─── 기본 설정 ─── -->
+    <div id="tab-settings" class="tab-content">
+      <div class="settings-grid">
+
+        <div class="settings-block">
+          <h3>📞 연락처 정보</h3>
+          <div class="fg"><label>대표 전화번호</label><input type="text" id="s-phone" placeholder="1668-3603"></div>
+          <div class="fg"><label>상담 시간</label><input type="text" id="s-hours" placeholder="평일 09:00 - 18:00"></div>
+          <div class="fg"><label>주소 / 안내</label><input type="text" id="s-address" placeholder="전국 어디서나 상담 가능"></div>
+          <div class="fg"><label>카카오톡 URL</label><input type="text" id="s-kakao" placeholder="https://open.kakao.com/..."></div>
+          <div class="fg"><label>저작권 문구</label><input type="text" id="s-copyright" placeholder="© 2024 (주)대림글로벌..."></div>
+          <button class="btn-primary" id="saveInfoBtn">연락처 저장</button>
+        </div>
+
+        <div class="settings-block">
+          <h3>🔑 비밀번호 변경</h3>
+          <div class="fg"><label>현재 비밀번호</label><input type="password" id="s-old-pw" placeholder="현재 비밀번호"></div>
+          <div class="fg"><label>새 비밀번호</label><input type="password" id="s-new-pw" placeholder="새 비밀번호 (4자 이상)"></div>
+          <div class="fg"><label>새 비밀번호 확인</label><input type="password" id="s-new-pw2" placeholder="새 비밀번호 재입력"></div>
+          <div id="pw-msg" class="pw-msg"></div>
+          <button class="btn-primary" id="changePwBtn">비밀번호 변경</button>
+        </div>
+
+        <div class="settings-block full">
+          <h3>💾 데이터 백업 & 복원</h3>
+          <p class="settings-desc">모든 콘텐츠(시공사례, 사회공헌, 영상, 텍스트)를 JSON 파일로 내보내거나 가져올 수 있습니다.<br>다른 기기에서도 동일한 설정을 사용할 때 활용하세요.</p>
+          <div class="backup-btns">
+            <button class="btn-primary" id="exportBtn">⬇ 데이터 내보내기 (JSON)</button>
+            <label class="btn-outline" for="importFile">⬆ 데이터 가져오기 (JSON)</label>
+            <input type="file" accept=".json" id="importFile" hidden>
+          </div>
+          <div id="import-msg" class="import-msg"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>
