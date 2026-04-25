@@ -303,3 +303,96 @@ textarea { resize: vertical; }
 /* ── Drag & Drop Reorder ── */
 .item-row.dragging { opacity: .5; border-style: dashed; }
 .item-row.drag-over { border-color: var(--gold); background: rgba(201,169,110,.04); }
+
+/* ── 상담 신청 내역 ── */
+.sb-item-inquiry { position: relative; }
+.sb-badge {
+  background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 5px; border-radius: 10px;
+  margin-left: 4px; vertical-align: middle;
+}
+.dash-card-inquiry { cursor: pointer; }
+.dash-card-inquiry:hover { border: 1.5px solid var(--gold); }
+
+.email-setup-box {
+  display: flex; align-items: flex-start; gap: 16px;
+  background: #FFF8E1; border: 1.5px solid #FFD54F;
+  border-radius: 12px; padding: 20px 24px; margin-bottom: 20px;
+}
+.esb-icon { font-size: 28px; flex-shrink: 0; padding-top: 2px; }
+.esb-content strong { display: block; font-size: 14px; font-weight: 700; color: #795548; margin-bottom: 6px; }
+.esb-content p { font-size: 13px; color: #6D4C41; line-height: 1.6; margin-bottom: 12px; }
+
+.inq-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+}
+.inq-summary { font-size: 14px; color: var(--text-md); }
+.inq-summary strong { color: var(--p); font-weight: 700; }
+.inq-filter {
+  padding: 7px 12px; border: 1.5px solid var(--border);
+  border-radius: var(--radius); font-size: 13px;
+  background: var(--white); color: var(--text); cursor: pointer;
+}
+.btn-del-text { color: var(--red) !important; border-color: rgba(224,82,82,.3) !important; }
+
+.inq-empty { text-align: center; padding: 48px; color: var(--text-lt); font-size: 15px; }
+
+.inq-card {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 12px; margin-bottom: 10px; overflow: hidden;
+  transition: border-color var(--trans);
+}
+.inq-card:hover { border-color: var(--gold); }
+.inq-card-new { border-left: 4px solid var(--red); }
+
+.inq-card-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; flex-wrap: wrap;
+}
+.inq-status {
+  font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; flex-shrink: 0; white-space: nowrap;
+}
+.status-new  { background: #FFEBEE; color: var(--red); }
+.status-read { background: #E3F2FD; color: #1565C0; }
+.status-done { background: var(--green-lt); color: var(--green); }
+
+.inq-name-phone { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
+.inq-name-phone strong { font-size: 15px; font-weight: 700; color: var(--p); }
+.inq-phone { font-size: 13px; color: var(--gold); font-weight: 600; }
+.inq-phone:hover { color: var(--gold-dk); }
+
+.inq-meta { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.inq-meta span { font-size: 12px; color: var(--text-lt); }
+.inq-tag { background: rgba(201,169,110,.12); color: var(--gold); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+
+.inq-card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.inq-status-sel {
+  padding: 6px 10px; border: 1.5px solid var(--border);
+  border-radius: var(--radius); font-size: 12px; background: var(--white);
+  color: var(--text); cursor: pointer;
+}
+
+.inq-detail { background: var(--bg); border-top: 1px solid var(--border); padding: 16px 20px; }
+.inq-detail-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 12px;
+}
+.inq-detail-grid label { display: block; font-size: 11px; color: var(--text-lt); margin-bottom: 3px; }
+.inq-detail-grid span  { font-size: 13px; font-weight: 600; color: var(--p); }
+.inq-message label { font-size: 11px; color: var(--text-lt); display: block; margin-bottom: 4px; }
+.inq-message p { font-size: 13px; color: var(--text-md); line-height: 1.6; background: var(--white); padding: 10px 14px; border-radius: var(--radius); }
+
+/* ── 이메일 설정 ── */
+.email-settings-block { border-top: 3px solid #1a73e8; }
+.email-setup-steps { display: flex; flex-direction: column; gap: 14px; background: var(--bg); border-radius: 10px; padding: 18px 20px; margin-bottom: 4px; }
+.email-step { display: flex; gap: 12px; align-items: flex-start; }
+.email-step-num {
+  width: 26px; height: 26px; background: #1a73e8; color: #fff;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.email-step strong { display: block; font-size: 13px; font-weight: 700; color: var(--p); margin-bottom: 3px; }
+.email-step p { font-size: 12px; color: var(--text-md); line-height: 1.6; }
+.email-step a { color: #1a73e8; font-weight: 600; }

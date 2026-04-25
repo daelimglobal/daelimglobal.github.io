@@ -44,6 +44,7 @@
     </div>
     <nav class="sb-nav">
       <button class="sb-item active" data-tab="dashboard">📊 대시보드</button>
+      <button class="sb-item sb-item-inquiry" data-tab="inquiries">📋 상담 신청 내역 <span class="sb-badge" id="sbBadge" style="display:none"></span></button>
       <button class="sb-item" data-tab="portfolio">🏠 시공사례 관리</button>
       <button class="sb-item" data-tab="social">🌱 사회공헌 관리</button>
       <button class="sb-item" data-tab="videos">🎬 동영상 관리</button>
@@ -87,6 +88,10 @@
           <div class="dc-icon">📞</div>
           <div><strong id="dc-phone">-</strong><span>대표 전화</span></div>
         </div>
+        <div class="dash-card dash-card-inquiry" onclick="document.querySelector('[data-tab=inquiries]').click()">
+          <div class="dc-icon">📋</div>
+          <div><strong id="dc-inquiry-count">0</strong><span>상담 신청 <small id="dc-new-count" style="color:#e05252"></small></span></div>
+        </div>
       </div>
       <div class="dash-guide">
         <h3>📖 사용 가이드</h3>
@@ -121,6 +126,38 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ─── 상담 신청 내역 ─── -->
+    <div id="tab-inquiries" class="tab-content">
+
+      <div class="email-setup-box" id="emailSetupBox">
+        <div class="esb-icon">📧</div>
+        <div class="esb-content">
+          <strong>이메일 알림이 설정되지 않았습니다</strong>
+          <p>고객이 상담 신청 시 이메일로 즉시 알림을 받으려면 아래 이메일 설정을 완료해주세요.<br>설정 전까지는 <b>이 관리자 패널에서만</b> 신청 내역을 확인할 수 있습니다.</p>
+          <button class="btn-primary btn-sm" onclick="document.querySelector('[data-tab=settings]').click()">📧 이메일 알림 설정하기</button>
+        </div>
+      </div>
+
+      <div class="inq-toolbar">
+        <div class="inq-summary">
+          전체 <strong id="inqTotal">0</strong>건
+          &nbsp;·&nbsp; 미확인 <strong id="inqNew" style="color:#e05252">0</strong>건
+        </div>
+        <div style="display:flex;gap:8px">
+          <select id="inqFilter" class="inq-filter">
+            <option value="all">전체 보기</option>
+            <option value="미확인">미확인만</option>
+            <option value="확인완료">확인완료</option>
+            <option value="처리완료">처리완료</option>
+          </select>
+          <button class="btn-outline btn-sm" id="markAllReadBtn">전체 읽음 표시</button>
+          <button class="btn-outline btn-sm btn-del-text" id="clearInqBtn">전체 삭제</button>
+        </div>
+      </div>
+
+      <div id="inquiryList"></div>
     </div>
 
     <!-- ─── 시공사례 관리 ─── -->
@@ -295,6 +332,46 @@
     <!-- ─── 기본 설정 ─── -->
     <div id="tab-settings" class="tab-content">
       <div class="settings-grid">
+
+        <div class="settings-block full email-settings-block">
+          <h3>📧 상담 신청 이메일 알림 설정</h3>
+          <div class="email-setup-steps">
+            <div class="email-step">
+              <span class="email-step-num">1</span>
+              <div>
+                <strong>web3forms.com 접속</strong>
+                <p><a href="https://web3forms.com" target="_blank">web3forms.com</a> 에 접속하여 알림 받을 이메일 주소를 입력하세요. (무료, 회원가입 불필요)</p>
+              </div>
+            </div>
+            <div class="email-step">
+              <span class="email-step-num">2</span>
+              <div>
+                <strong>이메일로 액세스 키 확인</strong>
+                <p>입력한 이메일로 <b>액세스 키(Access Key)</b>가 발송됩니다. 이메일을 확인하세요.</p>
+              </div>
+            </div>
+            <div class="email-step">
+              <span class="email-step-num">3</span>
+              <div>
+                <strong>아래에 입력 후 저장</strong>
+                <p>이메일로 받은 액세스 키를 아래에 붙여넣고 저장하면 설정이 완료됩니다.</p>
+              </div>
+            </div>
+          </div>
+          <div class="fg" style="margin-top:16px">
+            <label>📬 알림 받을 이메일 주소 (확인용)</label>
+            <input type="email" id="s-notify-email" placeholder="예: daelimglobal@naver.com">
+          </div>
+          <div class="fg">
+            <label>🔑 Web3Forms 액세스 키 <span id="email-status-badge"></span></label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="s-w3key" placeholder="액세스 키를 여기에 붙여넣기">
+              <button class="btn-primary btn-sm" id="testEmailBtn">테스트 발송</button>
+            </div>
+            <small id="email-test-result"></small>
+          </div>
+          <button class="btn-primary" id="saveEmailBtn">📧 이메일 알림 설정 저장</button>
+        </div>
 
         <div class="settings-block">
           <h3>📞 연락처 정보</h3>

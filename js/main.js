@@ -80,11 +80,59 @@ const counterObs = new IntersectionObserver(entries => {
 document.querySelectorAll('.cnt').forEach(el => counterObs.observe(el));
 
 /* ── Contact Form ── */
-const form    = document.getElementById('contactForm');
+const form     = document.getElementById('contactForm');
 const formDone = document.getElementById('formDone');
+const formBtn  = form ? form.querySelector('button[type="submit"]') : null;
+
 if (form) {
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
+    if (formBtn) { formBtn.disabled = true; formBtn.textContent = '전송 중...'; }
+
+    const fd = new FormData(form);
+    const data = {
+      id:       Date.now(),
+      status:   '미확인',
+      신청시각:  new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+      성함:     fd.get('name')     || '',
+      연락처:   fd.get('phone')    || '',
+      부지지역:  fd.get('location') || '',
+      희망평형:  fd.get('size')     || '',
+      예상예산:  fd.get('budget')   || '',
+      문의내용:  fd.get('message')  || '',
+    };
+
+    /* 1. localStorage 저장 (관리자 패널에서 확인 가능) */
+    try {
+      const list = JSON.parse(localStorage.getItem('dg_submissions') || '[]');
+      list.unshift(data);
+      if (list.length > 200) list.pop();
+      localStorage.setItem('dg_submissions', JSON.stringify(list));
+    } catch(err) {}
+
+    /* 2. 이메일 알림 전송 (Web3Forms — 관리자 패널에서 이메일 설정 시 작동) */
+    const w3Key = (localStorage.getItem('dg_w3forms_key') || '').trim();
+    if (w3Key) {
+      try {
+        await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            access_key: w3Key,
+            subject:    `[대림글로벌] 건축상담 신청 — ${data.성함} (${data.연락처})`,
+            from_name:  '대림글로벌 홈페이지',
+            '신청자':   data.성함,
+            '연락처':   data.연락처,
+            '부지지역':  data.부지지역,
+            '희망평형':  data.희망평형,
+            '예상예산':  data.예상예산,
+            '문의내용':  data.문의내용,
+            '신청시각':  data.신청시각,
+          })
+        });
+      } catch(err) { console.warn('이메일 전송 오류:', err); }
+    }
+
     form.style.display = 'none';
     formDone.style.display = 'block';
   });

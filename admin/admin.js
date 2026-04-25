@@ -75,20 +75,159 @@ function initAdmin() {
   renderPortfolioList();
   renderSocialList();
   renderVideoList();
+  renderInquiryList();
   loadSettings();
+  loadEmailSettings();
   loadContentEditor();
+  updateInquiryBadge();
 }
 
 /* ── 대시보드 ── */
 function updateDashboard() {
-  const p = load('portfolio', DEFAULT_PORTFOLIO);
-  const s = load('social', DEFAULT_SOCIAL);
-  const v = load('videos', []).filter(v => v.youtubeId);
+  const p    = load('portfolio', DEFAULT_PORTFOLIO);
+  const s    = load('social', DEFAULT_SOCIAL);
+  const v    = load('videos', []).filter(v => v.youtubeId);
   const info = load('info', DEFAULT_INFO);
+  const inq  = JSON.parse(localStorage.getItem('dg_submissions') || '[]');
+  const newCount = inq.filter(i => i.status === '미확인').length;
+
   document.getElementById('dc-portfolio-count').textContent = p.length;
   document.getElementById('dc-social-count').textContent = s.length;
   document.getElementById('dc-video-count').textContent = v.length;
   document.getElementById('dc-phone').textContent = info.phone;
+  document.getElementById('dc-inquiry-count').textContent = inq.length;
+  const newEl = document.getElementById('dc-new-count');
+  if (newEl) newEl.textContent = newCount > 0 ? `(미확인 ${newCount}건)` : '';
+}
+
+function updateInquiryBadge() {
+  const inq = JSON.parse(localStorage.getItem('dg_submissions') || '[]');
+  const n   = inq.filter(i => i.status === '미확인').length;
+  const badge = document.getElementById('sbBadge');
+  if (!badge) return;
+  if (n > 0) { badge.textContent = n; badge.style.display = 'inline-block'; }
+  else badge.style.display = 'none';
+}
+
+/* ==========================================
+   상담 신청 내역 (Inquiries)
+   ========================================== */
+function getInquiries() {
+  return JSON.parse(localStorage.getItem('dg_submissions') || '[]');
+}
+function saveInquiries(list) {
+  localStorage.setItem('dg_submissions', JSON.stringify(list));
+}
+
+function renderInquiryList() {
+  const all  = getInquiries();
+  const fv   = document.getElementById('inqFilter');
+  const filter = fv ? fv.value : 'all';
+  const list = filter === 'all' ? all : all.filter(i => i.status === filter);
+
+  const newCount = all.filter(i => i.status === '미확인').length;
+  const totalEl  = document.getElementById('inqTotal');
+  const newEl    = document.getElementById('inqNew');
+  if (totalEl) totalEl.textContent = all.length;
+  if (newEl)   newEl.textContent   = newCount;
+
+  const emailKey = (localStorage.getItem('dg_w3forms_key') || '').trim();
+  const setupBox = document.getElementById('emailSetupBox');
+  if (setupBox) setupBox.style.display = emailKey ? 'none' : 'flex';
+
+  const container = document.getElementById('inquiryList');
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = `<div class="inq-empty">
+      ${all.length === 0 ? '📭 아직 상담 신청이 없습니다.' : '해당 조건의 신청이 없습니다.'}
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(item => {
+    const statusClass = item.status === '미확인' ? 'status-new' : item.status === '처리완료' ? 'status-done' : 'status-read';
+    return `
+    <div class="inq-card ${item.status === '미확인' ? 'inq-card-new' : ''}" id="inq-${item.id}">
+      <div class="inq-card-header">
+        <span class="inq-status ${statusClass}">${item.status}</span>
+        <div class="inq-name-phone">
+          <strong>${item.성함 || '(이름 없음)'}</strong>
+          <a href="tel:${(item.연락처||'').replace(/[^0-9]/g,'')}" class="inq-phone">📞 ${item.연락처 || '-'}</a>
+        </div>
+        <div class="inq-meta">
+          <span>${item.신청시각 || ''}</span>
+          ${item.희망평형 ? `<span class="inq-tag">${item.희망평형}</span>` : ''}
+          ${item.예상예산 ? `<span class="inq-tag">${item.예상예산}</span>` : ''}
+        </div>
+        <div class="inq-card-actions">
+          <button class="btn-sm btn-outline" onclick="toggleInqDetail(${item.id})">상세보기</button>
+          <select class="inq-status-sel" onchange="changeInqStatus(${item.id}, this.value)">
+            <option ${item.status==='미확인'?'selected':''}>미확인</option>
+            <option ${item.status==='확인완료'?'selected':''}>확인완료</option>
+            <option ${item.status==='처리완료'?'selected':''}>처리완료</option>
+          </select>
+          <button class="btn-del" onclick="deleteInq(${item.id})" title="삭제">🗑</button>
+        </div>
+      </div>
+      <div class="inq-detail" id="inq-detail-${item.id}" style="display:none">
+        <div class="inq-detail-grid">
+          <div><label>부지 지역</label><span>${item.부지지역 || '-'}</span></div>
+          <div><label>희망 평형</label><span>${item.희망평형 || '-'}</span></div>
+          <div><label>예상 예산</label><span>${item.예상예산 || '-'}</span></div>
+          <div><label>신청 시각</label><span>${item.신청시각 || '-'}</span></div>
+        </div>
+        ${item.문의내용 ? `<div class="inq-message"><label>문의 내용</label><p>${item.문의내용}</p></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  updateInquiryBadge();
+}
+
+window.toggleInqDetail = function(id) {
+  const el = document.getElementById(`inq-detail-${id}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+
+window.changeInqStatus = function(id, status) {
+  const list = getInquiries();
+  const idx  = list.findIndex(x => x.id === id);
+  if (idx >= 0) { list[idx].status = status; saveInquiries(list); }
+  renderInquiryList();
+  updateDashboard();
+  showSaved('상태가 변경되었습니다.');
+};
+
+window.deleteInq = function(id) {
+  if (!confirm('이 상담 신청을 삭제할까요?')) return;
+  saveInquiries(getInquiries().filter(x => x.id !== id));
+  renderInquiryList();
+  updateDashboard();
+};
+
+const inqFilter = document.getElementById('inqFilter');
+if (inqFilter) inqFilter.addEventListener('change', renderInquiryList);
+
+const markAllReadBtn = document.getElementById('markAllReadBtn');
+if (markAllReadBtn) {
+  markAllReadBtn.addEventListener('click', () => {
+    const list = getInquiries().map(i => ({ ...i, status: i.status === '미확인' ? '확인완료' : i.status }));
+    saveInquiries(list);
+    renderInquiryList();
+    updateDashboard();
+    showSaved('전체 읽음 표시 완료');
+  });
+}
+
+const clearInqBtn = document.getElementById('clearInqBtn');
+if (clearInqBtn) {
+  clearInqBtn.addEventListener('click', () => {
+    if (!confirm('상담 신청 내역을 전체 삭제할까요? 복구할 수 없습니다.')) return;
+    localStorage.removeItem('dg_submissions');
+    renderInquiryList();
+    updateDashboard();
+    showSaved('전체 삭제되었습니다.');
+  });
 }
 
 /* ==========================================
@@ -367,6 +506,68 @@ document.getElementById('saveContentBtn').addEventListener('click', () => {
   });
   save('customText', ct);
   showSaved('텍스트 저장 완료 ✓');
+});
+
+/* ==========================================
+   이메일 알림 설정
+   ========================================== */
+function loadEmailSettings() {
+  const key   = localStorage.getItem('dg_w3forms_key') || '';
+  const email = localStorage.getItem('dg_notify_email') || '';
+  const keyEl = document.getElementById('s-w3key');
+  const emEl  = document.getElementById('s-notify-email');
+  if (keyEl) keyEl.value = key;
+  if (emEl)  emEl.value  = email;
+
+  const badge = document.getElementById('email-status-badge');
+  if (badge) {
+    if (key.trim()) {
+      badge.textContent = '✓ 설정됨';
+      badge.style.cssText = 'color:#3D6B4F;font-size:12px;font-weight:700;margin-left:6px';
+    } else {
+      badge.textContent = '미설정';
+      badge.style.cssText = 'color:#e05252;font-size:12px;margin-left:6px';
+    }
+  }
+}
+
+document.getElementById('saveEmailBtn').addEventListener('click', () => {
+  const key   = (document.getElementById('s-w3key').value || '').trim();
+  const email = (document.getElementById('s-notify-email').value || '').trim();
+  localStorage.setItem('dg_w3forms_key',   key);
+  localStorage.setItem('dg_notify_email', email);
+  loadEmailSettings();
+  renderInquiryList();
+  showSaved('이메일 알림 설정이 저장되었습니다 ✓');
+});
+
+document.getElementById('testEmailBtn').addEventListener('click', async () => {
+  const key   = (document.getElementById('s-w3key').value || '').trim();
+  const email = (document.getElementById('s-notify-email').value || '').trim();
+  const resEl = document.getElementById('email-test-result');
+  if (!key) { if(resEl) { resEl.style.color='#e05252'; resEl.textContent='액세스 키를 먼저 입력해주세요.'; } return; }
+  if(resEl) { resEl.style.color='#888'; resEl.textContent='전송 중...'; }
+  try {
+    const resp = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: key,
+        subject: '[대림글로벌] 이메일 알림 테스트',
+        from_name: '대림글로벌 관리자',
+        '내용': '이메일 알림 설정이 정상적으로 완료되었습니다.',
+        '알림받을 이메일': email || '(미입력)',
+      })
+    });
+    const result = await resp.json();
+    if (result.success) {
+      if(resEl) { resEl.style.color='#3D6B4F'; resEl.textContent='✓ 테스트 이메일이 발송되었습니다! 이메일함을 확인해주세요.'; }
+    } else {
+      if(resEl) { resEl.style.color='#e05252'; resEl.textContent='❌ 전송 실패: 액세스 키를 다시 확인해주세요.'; }
+    }
+  } catch(err) {
+    if(resEl) { resEl.style.color='#e05252'; resEl.textContent='❌ 네트워크 오류가 발생했습니다.'; }
+  }
 });
 
 /* ==========================================
