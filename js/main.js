@@ -110,8 +110,11 @@ if (form) {
       localStorage.setItem('dg_submissions', JSON.stringify(list));
     } catch(err) {}
 
-    /* 2. 이메일 알림 전송 (Web3Forms — 관리자 패널에서 이메일 설정 시 작동) */
-    const w3Key = (localStorage.getItem('dg_w3forms_key') || '').trim();
+    /* 2. 이메일 알림 전송 (Web3Forms)
+          - window.DG_CONFIG.w3key : index.html에 직접 심긴 키 (PC·모바일 모두 작동)
+          - localStorage 값은 하위 호환용 fallback                              */
+    const w3Key = (window.DG_CONFIG && window.DG_CONFIG.w3key)
+                  || (localStorage.getItem('dg_w3forms_key') || '').trim();
     if (w3Key) {
       try {
         await fetch('https://api.web3forms.com/submit', {

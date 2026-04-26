@@ -512,12 +512,20 @@ document.getElementById('saveContentBtn').addEventListener('click', () => {
    이메일 알림 설정
    ========================================== */
 function loadEmailSettings() {
-  const key   = localStorage.getItem('dg_w3forms_key') || '';
+  /* index.html에 심긴 키를 우선 표시, 없으면 localStorage 값 */
+  const embeddedKey = (window.DG_CONFIG && window.DG_CONFIG.w3key) || '';
+  const key   = embeddedKey || localStorage.getItem('dg_w3forms_key') || '';
   const email = localStorage.getItem('dg_notify_email') || '';
   const keyEl = document.getElementById('s-w3key');
   const emEl  = document.getElementById('s-notify-email');
   if (keyEl) keyEl.value = key;
   if (emEl)  emEl.value  = email;
+
+  /* 코드에 심긴 키가 있으면 안내 문구 표시 */
+  const embeddedNote = document.getElementById('embedded-key-note');
+  if (embeddedNote) {
+    embeddedNote.style.display = embeddedKey ? 'block' : 'none';
+  }
 
   const badge = document.getElementById('email-status-badge');
   if (badge) {
