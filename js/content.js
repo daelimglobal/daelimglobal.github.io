@@ -180,10 +180,39 @@ function applyCustomText() {
   });
 }
 
+/* GAS에서 최신 콘텐츠 로드 → localStorage 덮어쓰기 → 재렌더 */
+async function syncFromGAS() {
+  const gasUrl = (window.DG_CONFIG && window.DG_CONFIG.gasUrl) || '';
+  if (!gasUrl) return;
+  try {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10000);
+    const resp = await fetch(gasUrl + '?action=read_content&t=' + Date.now(), { signal: ac.signal });
+    clearTimeout(timer);
+    const content = await resp.json();
+    if (!content || typeof content !== 'object' || !Object.keys(content).length) return;
+    let changed = false;
+    Object.keys(content).forEach(k => {
+      if (content[k] !== undefined && content[k] !== '') {
+        const prev = localStorage.getItem('dg_' + k);
+        if (prev !== content[k]) { localStorage.setItem('dg_' + k, content[k]); changed = true; }
+      }
+    });
+    if (changed) {
+      applyInfo();
+      applyCustomText();
+      renderPortfolio();
+      renderSocial();
+      renderVideos();
+    }
+  } catch(e) { /* 조용히 실패 — localStorage 기본값 사용 */ }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   applyInfo();
   applyCustomText();
   renderPortfolio();
   renderSocial();
   renderVideos();
+  syncFromGAS();   /* 백그라운드에서 GAS 최신 데이터 동기화 */
 });

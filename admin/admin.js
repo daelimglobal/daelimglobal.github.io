@@ -44,9 +44,49 @@ window.copyGasCode = function() {
 const DEFAULT_PW = 'daelim2024';
 
 function getStoredPw() { return localStorage.getItem('dg_admin_pw') || DEFAULT_PW; }
-function save(key, val) { localStorage.setItem('dg_' + key, JSON.stringify(val)); }
+function save(key, val) {
+  const jsonStr = JSON.stringify(val);
+  localStorage.setItem('dg_' + key, jsonStr);
+  saveToGAS(key, jsonStr);   /* GAS에도 동기화 → 모든 기기 공유 */
+}
 function load(key, fallback) {
   try { const v = localStorage.getItem('dg_' + key); return v ? JSON.parse(v) : fallback; } catch(e) { return fallback; }
+}
+
+/* ── GAS 콘텐츠 동기화 ── */
+function getGasUrl() {
+  return (localStorage.getItem('dg_gas_url') || (window.DG_CONFIG && window.DG_CONFIG.gasUrl) || '').trim();
+}
+
+function saveToGAS(key, rawStr) {
+  const gasUrl = getGasUrl();
+  if (!gasUrl) return;
+  if (rawStr && rawStr.length > 800000) return; /* base64 이미지 등 너무 큰 값은 건너뜀 */
+  fetch(gasUrl, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: new URLSearchParams({ action: 'write_content', key, value: rawStr || '' })
+  }).catch(() => {});
+}
+
+async function loadAllContentFromGAS() {
+  const gasUrl = getGasUrl();
+  if (!gasUrl) return false;
+  try {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10000);
+    const resp = await fetch(gasUrl + '?action=read_content&t=' + Date.now(), { signal: ac.signal });
+    clearTimeout(timer);
+    const content = await resp.json();
+    if (content && typeof content === 'object' && Object.keys(content).length > 0) {
+      Object.keys(content).forEach(k => {
+        if (content[k] !== undefined && content[k] !== '')
+          localStorage.setItem('dg_' + k, content[k]);
+      });
+      return true;
+    }
+  } catch(e) {}
+  return false;
 }
 
 /* ── 기본 데이터 ── */
@@ -110,15 +150,26 @@ function showSaved(msg = '저장되었습니다 ✓') {
 
 /* ── 관리자 초기화 ── */
 function initAdmin() {
+  /* 즉시 localStorage 기반으로 렌더 */
   updateDashboard();
   renderPortfolioList();
   renderSocialList();
   renderVideoList();
-  /* renderInquiryList는 탭 클릭 시 호출 — 동시 호출 충돌 방지 */
   loadSettings();
   loadEmailSettings();
   loadContentEditor();
   updateInquiryBadge();
+  /* GAS에서 최신 콘텐츠 로드 → localStorage 업데이트 → 재렌더 (모든 기기 동기화) */
+  loadAllContentFromGAS().then(updated => {
+    if (!updated) return;
+    updateDashboard();
+    renderPortfolioList();
+    renderSocialList();
+    renderVideoList();
+    loadSettings();
+    loadEmailSettings();
+    loadContentEditor();
+  });
 }
 
 /* ── 대시보드 ── */
@@ -777,6 +828,7 @@ document.getElementById('changePwBtn').addEventListener('click', () => {
   if (newPw.length < 4) { msg.className = 'pw-msg err'; msg.textContent = '비밀번호는 4자 이상이어야 합니다.'; return; }
   if (newPw !== newPw2) { msg.className = 'pw-msg err'; msg.textContent = '새 비밀번호가 일치하지 않습니다.'; return; }
   localStorage.setItem('dg_admin_pw', newPw);
+  saveToGAS('admin_pw', newPw);   /* 모든 기기에 비밀번호 동기화 */
   msg.className = 'pw-msg ok'; msg.textContent = '비밀번호가 변경되었습니다.';
   ['s-old-pw','s-new-pw','s-new-pw2'].forEach(id => document.getElementById(id).value = '');
 });

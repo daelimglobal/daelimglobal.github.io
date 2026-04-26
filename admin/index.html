@@ -369,31 +369,64 @@
                 <button class="btn-sm btn-outline" style="margin-top:6px" onclick="document.getElementById('gasCodeBlock').style.display=document.getElementById('gasCodeBlock').style.display==='none'?'block':'none'">📋 코드 보기 / 숨기기</button>
                 <div id="gasCodeBlock" style="display:none;margin-top:10px;position:relative">
                   <button onclick="copyGasCode()" class="btn-sm btn-outline" style="position:absolute;top:8px;right:8px;z-index:1">복사</button>
-                  <pre id="gasCode" style="background:#1e1e2e;color:#cdd6f4;padding:14px 14px 14px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.6;white-space:pre">const SHEET = '상담신청';
+                  <pre id="gasCode" style="background:#1e1e2e;color:#cdd6f4;padding:14px 14px 14px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.6;white-space:pre">const SS = '상담신청';
+const CT = '콘텐츠';
+
 function doGet(e) {
-  var p = e.parameter;
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var p = e.parameter, ss = SpreadsheetApp.getActiveSpreadsheet();
+
   if (p.action === 'write') {
-    var sh = ss.getSheetByName(SHEET) || ss.insertSheet(SHEET);
+    var sh = ss.getSheetByName(SS) || ss.insertSheet(SS);
     if (sh.getLastRow() === 0)
       sh.appendRow(['신청시각','성함','연락처','부지지역','희망평형','예상예산','문의내용','상태']);
-    sh.appendRow([p['신청시각']||'',p['성함']||'',p['연락처']||'',
-                  p['부지지역']||'',p['희망평형']||'',p['예상예산']||'',
-                  p['문의내용']||'','미확인']);
+    sh.appendRow([p['신청시각']||'',p['성함']||'',p['연락처']||'',p['부지지역']||'',
+                  p['희망평형']||'',p['예상예산']||'',p['문의내용']||'','미확인']);
     var r = JSON.stringify({success:true});
-    return ContentService.createTextOutput(p.callback ? p.callback+'('+r+')' : r)
-      .setMimeType(p.callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(p.callback?p.callback+'('+r+')':r)
+      .setMimeType(p.callback?ContentService.MimeType.JAVASCRIPT:ContentService.MimeType.JSON);
   }
-  var sh = ss.getSheetByName(SHEET); var data = [];
+
+  if (p.action === 'read_content') {
+    var csh = ss.getSheetByName(CT); var obj = {};
+    if (csh && csh.getLastRow() > 1) {
+      var rows = csh.getDataRange().getValues();
+      for (var i = 1; i < rows.length; i++) { if (rows[i][0]) obj[rows[i][0]] = rows[i][1]; }
+    }
+    var json = JSON.stringify(obj);
+    return ContentService.createTextOutput(p.callback?p.callback+'('+json+')':json)
+      .setMimeType(p.callback?ContentService.MimeType.JAVASCRIPT:ContentService.MimeType.JSON);
+  }
+
+  var sh = ss.getSheetByName(SS); var data = [];
   if (sh && sh.getLastRow() > 1) {
     var rows = sh.getDataRange().getValues(); var h = rows[0];
     data = rows.slice(1).reverse().map(function(r,i){
-      var o = {id: Date.now()-i}; h.forEach(function(k,j){ o[k]=r[j]; }); return o;
+      var o={id:Date.now()-i}; h.forEach(function(k,j){o[k]=r[j];}); return o;
     });
   }
   var json = JSON.stringify(data);
-  return ContentService.createTextOutput(p.callback ? p.callback+'('+json+')' : json)
-    .setMimeType(p.callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(p.callback?p.callback+'('+json+')':json)
+    .setMimeType(p.callback?ContentService.MimeType.JAVASCRIPT:ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var p = e.parameter, ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (p.action === 'write_content') {
+      var sh = ss.getSheetByName(CT) || ss.insertSheet(CT);
+      if (sh.getLastRow() === 0) sh.appendRow(['key','value','updated']);
+      var rowIdx = -1;
+      if (sh.getLastRow() > 1) {
+        var keys = sh.getRange(2,1,sh.getLastRow()-1,1).getValues();
+        for (var i = 0; i < keys.length; i++) { if (keys[i][0]===p.key){rowIdx=i+2;break;} }
+      }
+      var now = Utilities.formatDate(new Date(),'Asia/Seoul','yyyy-MM-dd HH:mm:ss');
+      if (rowIdx > 0) { sh.getRange(rowIdx,2).setValue(p.value); sh.getRange(rowIdx,3).setValue(now); }
+      else { sh.appendRow([p.key, p.value, now]); }
+      return ContentService.createTextOutput('ok');
+    }
+    return ContentService.createTextOutput('unknown');
+  } catch(err) { return ContentService.createTextOutput('err:'+err.message); }
 }</pre>
                 </div>
               </div>
