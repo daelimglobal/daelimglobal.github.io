@@ -55,13 +55,20 @@ if (testGhBtn) {
   });
 }
 
-/* 사진 2·3 URL 적용 헬퍼 */
+/* 사진 2·3 URL 적용 헬퍼 (사회공헌) */
 window.applyImgUrl2 = function(prefix) {
   const idMap = { sf2: { url: 'sf-img2-url', final: 'sf-img2-final', preview: 'sf-preview2' },
                   sf3: { url: 'sf-img3-url', final: 'sf-img3-final', preview: 'sf-preview3' } };
   const m = idMap[prefix]; if (!m) return;
   const url = val(m.url); if (!url) return;
   set(m.final, url); setPreview(m.preview, url);
+};
+
+/* 시공사례 추가 사진 URL 적용 헬퍼 */
+window.applyPfImg = function(num) {
+  const url = val('pf-img' + num + '-url'); if (!url) return;
+  set('pf-img' + num + '-final', url);
+  setPreview('pf-preview' + num, url);
 };
 
 window.copyGasCode = function() {
@@ -243,12 +250,12 @@ document.getElementById('saveBeethovenBtn').addEventListener('click', () => {
 
 /* ── 기본 데이터 ── */
 const DEFAULT_PORTFOLIO = [
-  { id:1, title:'경기도 양평',  size:'40평', type:'베토벤 40', style:'모던 스타일', img:'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80&auto=format&fit=crop' },
-  { id:2, title:'강원도 춘천',  size:'50평', type:'베토벤 50', style:'프리미엄',   img:'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=600&q=80&auto=format&fit=crop' },
-  { id:3, title:'충청북도 충주',size:'40평', type:'베토벤 40', style:'유럽풍',    img:'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80&auto=format&fit=crop' },
-  { id:4, title:'전라북도 전주',size:'30평', type:'베토벤 30', style:'모던',      img:'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80&auto=format&fit=crop' },
-  { id:5, title:'경상남도 거제',size:'50평', type:'베토벤 50', style:'럭셔리',    img:'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&q=80&auto=format&fit=crop' },
-  { id:6, title:'제주도',       size:'40평', type:'베토벤 40', style:'자연형',    img:'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=600&q=80&auto=format&fit=crop' },
+  { id:1, title:'경기도 양평',  size:'40평', type:'베토벤 40', style:'모던 스타일', img:'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', photo4:'', youtubeUrl:'' },
+  { id:2, title:'강원도 춘천',  size:'50평', type:'베토벤 50', style:'프리미엄',   img:'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', photo4:'', youtubeUrl:'' },
+  { id:3, title:'충청북도 충주',size:'40평', type:'베토벤 40', style:'유럽풍',    img:'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', photo4:'', youtubeUrl:'' },
+  { id:4, title:'전라북도 전주',size:'30평', type:'베토벤 30', style:'모던',      img:'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', photo4:'', youtubeUrl:'' },
+  { id:5, title:'경상남도 거제',size:'50평', type:'베토벤 50', style:'럭셔리',    img:'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', photo4:'', youtubeUrl:'' },
+  { id:6, title:'제주도',       size:'40평', type:'베토벤 40', style:'자연형',    img:'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', photo4:'', youtubeUrl:'' },
 ];
 const DEFAULT_SOCIAL = [
   { id:1, tag:'주거환경 개선', title:'독거노인 주거환경 개선 사업', desc:'취약계층 어르신들의 낡은 주거환경을 개선하여 안전하고 따뜻한 삶을 지원합니다.', img:'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', youtubeUrl:'', date:'2024.03' },
@@ -597,8 +604,13 @@ function renderPortfolioList() {
 
 document.getElementById('addPortfolioBtn').addEventListener('click', () => {
   document.getElementById('portfolioFormTitle').textContent = '시공사례 추가';
-  clearForm(['pf-title','pf-size','pf-type','pf-style','pf-img-url','pf-img-final','pf-edit-id']);
-  setPreview('pf-preview', '');
+  clearForm(['pf-title','pf-size','pf-type','pf-style',
+             'pf-img-url','pf-img-final',
+             'pf-img2-url','pf-img2-final',
+             'pf-img3-url','pf-img3-final',
+             'pf-img4-url','pf-img4-final',
+             'pf-youtube-url','pf-edit-id']);
+  ['pf-preview','pf-preview2','pf-preview3','pf-preview4'].forEach(id => setPreview(id, ''));
   document.getElementById('portfolioForm').style.display = 'block';
   document.getElementById('portfolioForm').scrollIntoView({ behavior:'smooth' });
 });
@@ -608,14 +620,18 @@ function editPortfolio(id) {
   const p = items.find(x => x.id === id);
   if (!p) return;
   document.getElementById('portfolioFormTitle').textContent = '시공사례 편집';
-  set('pf-title', p.title);
-  set('pf-size', p.size);
-  set('pf-type', p.type);
-  set('pf-style', p.style);
-  set('pf-img-url', p.img);
-  set('pf-img-final', p.img);
+  set('pf-title', p.title); set('pf-size', p.size);
+  set('pf-type', p.type);   set('pf-style', p.style);
+  set('pf-img-url', p.img);        set('pf-img-final', p.img);
+  set('pf-img2-url', p.photo2||''); set('pf-img2-final', p.photo2||'');
+  set('pf-img3-url', p.photo3||''); set('pf-img3-final', p.photo3||'');
+  set('pf-img4-url', p.photo4||''); set('pf-img4-final', p.photo4||'');
+  set('pf-youtube-url', p.youtubeUrl||'');
   set('pf-edit-id', p.id);
-  setPreview('pf-preview', p.img);
+  setPreview('pf-preview',  p.img);
+  setPreview('pf-preview2', p.photo2||'');
+  setPreview('pf-preview3', p.photo3||'');
+  setPreview('pf-preview4', p.photo4||'');
   document.getElementById('portfolioForm').style.display = 'block';
   document.getElementById('portfolioForm').scrollIntoView({ behavior:'smooth' });
 }
@@ -629,9 +645,13 @@ document.getElementById('savePortfolioBtn').addEventListener('click', () => {
   const item = {
     id: editId ? parseInt(editId) : Date.now(),
     title, size,
-    type:  val('pf-type'),
-    style: val('pf-style'),
-    img:   val('pf-img-final') || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80',
+    type:       val('pf-type'),
+    style:      val('pf-style'),
+    img:        val('pf-img-final')  || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80',
+    photo2:     val('pf-img2-final') || '',
+    photo3:     val('pf-img3-final') || '',
+    photo4:     val('pf-img4-final') || '',
+    youtubeUrl: val('pf-youtube-url') || '',
   };
   if (editId) items = items.map(x => x.id === item.id ? item : x);
   else items.push(item);

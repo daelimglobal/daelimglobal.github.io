@@ -248,7 +248,7 @@
           <div class="fg"><label>스타일</label><input type="text" id="pf-style" placeholder="예: 모던 스타일"></div>
         </div>
         <div class="fg">
-          <label>대표 이미지</label>
+          <label>대표 이미지 (사진 1)</label>
           <div class="img-upload-area" id="pf-img-area">
             <div class="img-preview" id="pf-preview"><span>이미지 없음</span></div>
             <div class="img-input-row">
@@ -261,7 +261,44 @@
             </div>
           </div>
         </div>
+        <div class="fg">
+          <label>사진 2</label>
+          <div class="img-upload-area">
+            <div class="img-preview" id="pf-preview2"><span>이미지 없음</span></div>
+            <div class="img-input-row">
+              <input type="text" id="pf-img2-url" placeholder="이미지 URL 입력 (https://...)">
+              <button type="button" class="btn-sm btn-outline" onclick="applyPfImg(2)">URL 적용</button>
+            </div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>사진 3</label>
+          <div class="img-upload-area">
+            <div class="img-preview" id="pf-preview3"><span>이미지 없음</span></div>
+            <div class="img-input-row">
+              <input type="text" id="pf-img3-url" placeholder="이미지 URL 입력 (https://...)">
+              <button type="button" class="btn-sm btn-outline" onclick="applyPfImg(3)">URL 적용</button>
+            </div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>사진 4</label>
+          <div class="img-upload-area">
+            <div class="img-preview" id="pf-preview4"><span>이미지 없음</span></div>
+            <div class="img-input-row">
+              <input type="text" id="pf-img4-url" placeholder="이미지 URL 입력 (https://...)">
+              <button type="button" class="btn-sm btn-outline" onclick="applyPfImg(4)">URL 적용</button>
+            </div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>🎬 유튜브 채널/영상 주소</label>
+          <input type="url" id="pf-youtube-url" placeholder="https://www.youtube.com/@채널명 또는 영상 주소">
+        </div>
         <input type="hidden" id="pf-img-final">
+        <input type="hidden" id="pf-img2-final">
+        <input type="hidden" id="pf-img3-final">
+        <input type="hidden" id="pf-img4-final">
         <input type="hidden" id="pf-edit-id">
         <div class="form-actions">
           <button class="btn-primary" id="savePortfolioBtn">저장</button>

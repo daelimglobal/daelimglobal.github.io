@@ -56,7 +56,15 @@ function renderPortfolio() {
   if (!grid) return;
   const items = get('portfolio');
   if (!items.length) { grid.innerHTML = '<p style="text-align:center;color:#aaa;padding:40px;grid-column:1/-1">등록된 시공사례가 없습니다.</p>'; return; }
-  grid.innerHTML = items.map(p => `
+  grid.innerHTML = items.map(p => {
+    const extras = [p.photo2, p.photo3, p.photo4].filter(Boolean);
+    const gallery = extras.length
+      ? `<div class="port-gallery">${extras.map(src => `<img src="${src}" alt="${p.title}" loading="lazy">`).join('')}</div>`
+      : '';
+    const ytBtn = p.youtubeUrl
+      ? `<a href="${p.youtubeUrl}" target="_blank" rel="noopener" class="port-yt-badge">▶ 시공 영상 보기</a>`
+      : '';
+    return `
     <div class="port-item reveal">
       <div class="port-img-wrap">
         <img src="${p.img}" alt="${p.title}" loading="lazy">
@@ -68,7 +76,9 @@ function renderPortfolio() {
           </div>
         </div>
       </div>
-    </div>`).join('');
+      ${gallery}${ytBtn}
+    </div>`;
+  }).join('');
 }
 
 function renderSocial() {
