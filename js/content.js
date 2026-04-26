@@ -212,6 +212,23 @@ function applyCustomText() {
   fields.forEach(id => {
     if (ct[id]) { const el = document.getElementById(id); if (el) el.innerHTML = ct[id]; }
   });
+
+  /* 네비게이션 메뉴명 */
+  const navMap = {
+    navAbout:     ['nav-about',    'mnav-about'],
+    navBeethoven: ['nav-beethoven','mnav-beethoven'],
+    navServices:  ['nav-services', 'mnav-services'],
+    navProcess:   ['nav-process',  'mnav-process'],
+    navPortfolio: ['nav-portfolio','mnav-portfolio'],
+    navSocial:    ['nav-social',   'mnav-social'],
+    navCta:       ['nav-cta',      'mnav-cta'],
+  };
+  Object.entries(navMap).forEach(([key, ids]) => {
+    if (ct[key]) ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = ct[key];
+    });
+  });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

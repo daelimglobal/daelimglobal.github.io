@@ -824,6 +824,8 @@ function deleteVideo(id) {
 function loadContentEditor() {
   const ct = load('customText', {});
   const defaults = {
+    navAbout: '회사소개', navBeethoven: '베토벤하우스', navServices: '서비스',
+    navProcess: '건축과정', navPortfolio: '시공사례', navSocial: '사회공헌', navCta: '무료상담',
     heroTitle: '합리적 가격으로<br><em>고품격 주택</em>을<br>건축합니다',
     heroSub: 'We build high-quality homes at affordable prices',
     aboutTitle: '대한민국을 대표하는<br><em>전원주택 건축 명가</em>',
@@ -847,6 +849,7 @@ function loadContentEditor() {
 
 document.getElementById('saveContentBtn').addEventListener('click', () => {
   const keys = [
+    'navAbout','navBeethoven','navServices','navProcess','navPortfolio','navSocial','navCta',
     'heroTitle','heroSub','aboutTitle','aboutLead','aboutDesc',
     'socialLead','socialStat1Num','socialStat1Label','socialStat2Num','socialStat2Label','socialStat3Num','socialStat3Label',
     'missionTitle','missionDesc','ctaTitle','ctaDesc','footerTagline',
