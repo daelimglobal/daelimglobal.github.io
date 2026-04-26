@@ -364,17 +364,17 @@ function saveInquiries(list) {
 
 /* GAS 데이터 읽기 — fetch 우선, 실패 시 JSONP 폴백 */
 async function fetchFromGAS(url) {
-  /* 1차: fetch (GAS GET은 CORS 허용) */
+  /* 1차: fetch */
   try {
     const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 12000);
+    const timer = setTimeout(() => ac.abort(), 5000);
     const resp = await fetch(url + '?action=read&t=' + Date.now(), { signal: ac.signal });
     clearTimeout(timer);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     return Array.isArray(data) ? data : [];
   } catch (fetchErr) {
-    /* 2차 폴백: JSONP (CORS 완전 우회) */
+    /* 2차 폴백: JSONP */
     return new Promise((resolve, reject) => {
       const cbName = 'dg_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
       const script = document.createElement('script');
@@ -387,14 +387,15 @@ async function fetchFromGAS(url) {
       document.head.appendChild(script);
       setTimeout(() => {
         if (window[cbName]) { reject(new Error('jsonp timeout')); delete window[cbName]; script.remove(); }
-      }, 18000);
+      }, 10000);
     });
   }
 }
 
 let _inqLoading = false;
+let _gasCache   = null;   /* 마지막으로 성공한 GAS 데이터 캐시 */
 
-/* ── 상담 신청 렌더 (Google 시트 우선, 없으면 localStorage) ── */
+/* ── 상담 신청 렌더 (Google 시트 우선, 없으면 캐시/localStorage) ── */
 async function renderInquiryList() {
   if (_inqLoading) return;
   _inqLoading = true;
@@ -413,40 +414,73 @@ async function renderInquiryList() {
   const setupBox = document.getElementById('emailSetupBox');
   if (setupBox) setupBox.style.display = emailKey ? 'none' : 'flex';
 
-  /* 로딩 표시 */
+  /* 캐시가 있으면 즉시 표시, 없으면 로딩 표시 */
+  if (_gasCache) {
+    _renderInquiryRows(_gasCache, container);
+    _inqLoading = false;
+    /* 백그라운드에서 갱신 시도 (비차단) */
+    if (gasUrl) {
+      fetchFromGAS(gasUrl).then(remote => {
+        _gasCache = _normalizeGasData(remote);
+        _renderInquiryRows(_gasCache, container);
+      }).catch(() => {});
+    }
+    return;
+  }
+
   container.innerHTML = '<div class="inq-empty">⏳ 신청 내역을 불러오는 중...</div>';
 
   let all = [];
   if (gasUrl) {
-    /* Google 시트에서 가져오기 (JSONP — CORS 우회) */
     try {
       const remote = await fetchFromGAS(gasUrl);
-      all = remote.map((item, idx) => ({
-        id:      item.id || (Date.now() - idx),
-        status:  String(item['상태'] || '미확인'),
-        신청시각: String(item['신청시각'] || ''),
-        성함:    String(item['성함']    || ''),
-        연락처:  String(item['연락처']  || ''),
-        부지지역: String(item['부지지역'] || ''),
-        희망평형: String(item['희망평형'] || ''),
-        예상예산: String(item['예상예산'] || ''),
-        문의내용: String(item['문의내용'] || ''),
-      }));
+      all = _normalizeGasData(remote);
+      _gasCache = all;
     } catch (err) {
       console.warn('Google 시트 조회 실패:', err);
-      container.innerHTML = `<div class="inq-empty" style="color:#e05252">
+      /* 캐시나 localStorage로 fallback */
+      all = _gasCache || getInquiries();
+      const warn = all.length
+        ? `<div style="background:#fff3cd;border:1px solid #ffc107;padding:8px 14px;border-radius:6px;font-size:12px;color:#856404;margin-bottom:12px">
+            ⚠️ Google 시트 연결 실패 — 마지막 데이터를 표시합니다.
+            <button class="btn-sm btn-outline" style="margin-left:10px" onclick="_inqLoading=false;renderInquiryList()">🔄 재시도</button>
+           </div>`
+        : '';
+      container.innerHTML = warn || `<div class="inq-empty" style="color:#e05252">
         ⚠️ Google 시트에서 데이터를 불러오지 못했습니다.<br>
         <button class="btn-sm btn-outline" style="margin-top:10px" onclick="_inqLoading=false;renderInquiryList()">🔄 다시 시도</button>
       </div>`;
+      if (!all.length) { _inqLoading = false; return; }
+      /* all이 있으면 경고 아래 카드 렌더 */
       _inqLoading = false;
+      _renderInquiryRows(all, container, warn);
       return;
     }
   } else {
-    /* Google 시트 미연동 → localStorage */
     all = getInquiries();
   }
 
-  /* 상태 오버레이 (관리자가 변경한 상태를 localStorage에 저장해 덮어씀) */
+  _inqLoading = false;
+  _renderInquiryRows(all, container);
+}
+
+/* GAS 데이터 정규화 */
+function _normalizeGasData(remote) {
+  return remote.map((item, idx) => ({
+    id:      item.id || (Date.now() - idx),
+    status:  String(item['상태'] || '미확인'),
+    신청시각: String(item['신청시각'] || ''),
+    성함:    String(item['성함']    || ''),
+    연락처:  String(item['연락처']  || ''),
+    부지지역: String(item['부지지역'] || ''),
+    희망평형: String(item['희망평형'] || ''),
+    예상예산: String(item['예상예산'] || ''),
+    문의내용: String(item['문의내용'] || ''),
+  }));
+}
+
+/* 내역 카드 렌더 (재사용) */
+function _renderInquiryRows(all, container, prependHtml) {
   const statusMap = JSON.parse(localStorage.getItem('dg_inq_status') || '{}');
   all = all.map(item => {
     const key = item.신청시각 + item.성함;
@@ -464,23 +498,23 @@ async function renderInquiryList() {
   if (newEl)   newEl.textContent   = newCount;
 
   if (!list.length) {
-    container.innerHTML = `<div class="inq-empty">${all.length === 0 ? '📭 아직 상담 신청이 없습니다.' : '해당 조건의 신청이 없습니다.'}</div>`;
+    container.innerHTML = (prependHtml || '') + `<div class="inq-empty">${all.length === 0 ? '📭 아직 상담 신청이 없습니다.' : '해당 조건의 신청이 없습니다.'}</div>`;
     updateInquiryBadge(newCount);
-    _inqLoading = false;
     return;
   }
 
   try {
-    container.innerHTML = list.map(item => {
+    const cards = list.map(item => {
       const statusClass = item.status === '미확인' ? 'status-new' : item.status === '처리완료' ? 'status-done' : 'status-read';
       const safeKey = encodeURIComponent(item.신청시각 + '|' + item.성함);
+      const phone = (item.연락처 || '').replace(/[^0-9]/g,'');
       return `
       <div class="inq-card ${item.status === '미확인' ? 'inq-card-new' : ''}">
         <div class="inq-card-header">
           <span class="inq-status ${statusClass}">${item.status}</span>
           <div class="inq-name-phone">
             <strong>${item.성함 || '(이름 없음)'}</strong>
-            <a href="tel:${item.연락처.replace(/[^0-9]/g,'')}" class="inq-phone">📞 ${item.연락처 || '-'}</a>
+            <a href="tel:${phone}" class="inq-phone">📞 ${item.연락처 || '-'}</a>
           </div>
           <div class="inq-meta">
             <span>${item.신청시각}</span>
@@ -488,8 +522,8 @@ async function renderInquiryList() {
             ${item.예상예산 ? `<span class="inq-tag">${item.예상예산}</span>` : ''}
           </div>
           <div class="inq-card-actions">
-            <button class="btn-sm btn-outline" onclick="this.closest('.inq-card').querySelector('.inq-detail').style.display = this.closest('.inq-card').querySelector('.inq-detail').style.display==='none'?'block':'none'">상세보기</button>
-            <select class="inq-status-sel" onchange="saveInqStatus('${safeKey}', this.value, this.closest('.inq-card'))">
+            <button class="btn-sm btn-outline" onclick="this.closest('.inq-card').querySelector('.inq-detail').style.display=this.closest('.inq-card').querySelector('.inq-detail').style.display==='none'?'block':'none'">상세보기</button>
+            <select class="inq-status-sel" onchange="saveInqStatus('${safeKey}',this.value,this.closest('.inq-card'))">
               <option ${item.status==='미확인'?'selected':''}>미확인</option>
               <option ${item.status==='확인완료'?'selected':''}>확인완료</option>
               <option ${item.status==='처리완료'?'selected':''}>처리완료</option>
@@ -507,6 +541,7 @@ async function renderInquiryList() {
         </div>
       </div>`;
     }).join('');
+    container.innerHTML = (prependHtml || '') + cards;
   } catch(renderErr) {
     console.error('렌더 오류:', renderErr);
     container.innerHTML = `<div class="inq-empty" style="color:#e05252">
@@ -515,7 +550,6 @@ async function renderInquiryList() {
     </div>`;
   }
   updateInquiryBadge(newCount);
-  _inqLoading = false;
 }
 
 window.saveInqStatus = function(safeKey, status, card) {
@@ -559,9 +593,16 @@ if (inqFilter) inqFilter.addEventListener('change', renderInquiryList);
 const markAllReadBtn = document.getElementById('markAllReadBtn');
 if (markAllReadBtn) {
   markAllReadBtn.addEventListener('click', () => {
-    const list = getInquiries().map(i => ({ ...i, status: i.status === '미확인' ? '확인완료' : i.status }));
-    saveInquiries(list);
-    renderInquiryList();
+    /* localStorage 상태 맵 전체를 확인완료로 업데이트 */
+    const map = JSON.parse(localStorage.getItem('dg_inq_status') || '{}');
+    if (_gasCache) {
+      _gasCache.forEach(item => { map[item.신청시각 + item.성함] = '확인완료'; });
+    } else {
+      getInquiries().forEach(i => { map[i.신청시각 + i.성함] = '확인완료'; });
+    }
+    localStorage.setItem('dg_inq_status', JSON.stringify(map));
+    const container = document.getElementById('inquiryList');
+    if (container) _renderInquiryRows(_gasCache || getInquiries(), container);
     updateDashboard();
     showSaved('전체 읽음 표시 완료');
   });

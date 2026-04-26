@@ -396,3 +396,22 @@ textarea { resize: vertical; }
 .email-step strong { display: block; font-size: 13px; font-weight: 700; color: var(--p); margin-bottom: 3px; }
 .email-step p { font-size: 12px; color: var(--text-md); line-height: 1.6; }
 .email-step a { color: #1a73e8; font-weight: 600; }
+
+/* ── 반응형 (모바일) ── */
+@media (max-width: 768px) {
+  .admin-app { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; padding: 10px; gap: 6px; }
+  .sb-logo { display: none; }
+  .sb-nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+  .sb-item { padding: 6px 10px; font-size: 12px; border-radius: 6px; }
+  .sb-bottom { display: none; }
+  .admin-main { height: auto; overflow-y: visible; }
+  .tab-content { padding: 16px 12px; }
+  .settings-grid { grid-template-columns: 1fr; }
+  .settings-block.full { grid-column: 1; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .dash-cards { grid-template-columns: repeat(2, 1fr); }
+  .admin-topbar { padding: 12px 16px; }
+  .topbar-right { gap: 8px; }
+  .inq-detail-grid { grid-template-columns: repeat(2, 1fr); }
+}
