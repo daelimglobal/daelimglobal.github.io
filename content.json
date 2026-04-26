@@ -21,5 +21,12 @@
     "copyright":   "© 2024 (주)대림글로벌 DAELIM GLOBAL. All rights reserved.",
     "footerHours": "평일 09:00 - 18:00"
   },
-  "customText": {}
+  "customText": {},
+  "images": {
+    "aboutImg": "https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800&q=80&auto=format&fit=crop"
+  },
+  "beethoven": {
+    "images": ["", "", "", "", ""],
+    "youtubeUrl": ""
+  }
 }

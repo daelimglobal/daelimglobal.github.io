@@ -113,6 +113,8 @@ async function commitContentToGitHub() {
     videos:     load('videos',    []),
     info:       load('info',      DEFAULT_INFO),
     customText: load('customText', {}),
+    images:     load('images',    { aboutImg: '' }),
+    beethoven:  load('beethoven', { images: ['','','','',''], youtubeUrl: '' }),
   };
   const jsonStr = JSON.stringify(content, null, 2);
   const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
@@ -161,7 +163,7 @@ async function loadContentJSON() {
     const resp = await fetch('/content.json', { cache: 'no-store' });
     if (!resp.ok) return false;
     const data = await resp.json();
-    ['portfolio','social','videos','info','customText'].forEach(k => {
+    ['portfolio','social','videos','info','customText','images','beethoven'].forEach(k => {
       if (data[k] !== undefined) localStorage.setItem('dg_' + k, JSON.stringify(data[k]));
     });
     return true;
@@ -182,6 +184,62 @@ function loadGitHubSettings() {
     badge.style.cssText = hasToken ? 'color:#3D6B4F;font-size:12px;font-weight:700;margin-left:6px' : 'color:#e05252;font-size:12px;margin-left:6px';
   }
 }
+
+/* ==========================================
+   이미지 관리 (Images)
+   ========================================== */
+function loadImagesSettings() {
+  const images = load('images', { aboutImg: '' });
+  const url = images.aboutImg || '';
+  set('ab-img-url', url);
+  set('ab-img-final', url);
+  setPreview('ab-preview', url);
+}
+
+document.getElementById('saveImagesBtn').addEventListener('click', () => {
+  const url = val('ab-img-final') || val('ab-img-url');
+  const images = { aboutImg: url };
+  save('images', images);
+  const msgEl = document.getElementById('images-save-msg');
+  if (msgEl) {
+    msgEl.style.color = '#3D6B4F';
+    msgEl.textContent = '✅ 이미지가 저장되었습니다. GitHub 동기화 후 모든 기기에 반영됩니다.';
+    setTimeout(() => { msgEl.textContent = ''; }, 5000);
+  }
+  showSaved('이미지 저장 완료 ✓');
+});
+
+/* 베토벤하우스 이미지 관리 */
+window.applyBhImg = function(idx) {
+  const inputs = document.querySelectorAll('.bh-img-url');
+  const url = (inputs[idx] && inputs[idx].value.trim()) || '';
+  if (!url) return;
+  setPreview('bh-preview-' + idx, url);
+};
+
+function loadBeethovenSettings() {
+  const bData = load('beethoven', { images: ['','','','',''], youtubeUrl: '' });
+  const imgs = bData.images || [];
+  document.querySelectorAll('.bh-img-url').forEach((inp, i) => {
+    inp.value = imgs[i] || '';
+    setPreview('bh-preview-' + i, imgs[i] || '');
+  });
+  set('bh-youtube-url', bData.youtubeUrl || '');
+}
+
+document.getElementById('saveBeethovenBtn').addEventListener('click', () => {
+  const imgs = Array.from(document.querySelectorAll('.bh-img-url')).map(inp => inp.value.trim());
+  const ytUrl = (document.getElementById('bh-youtube-url') && document.getElementById('bh-youtube-url').value.trim()) || '';
+  const bData = { images: imgs, youtubeUrl: ytUrl };
+  save('beethoven', bData);
+  const msgEl = document.getElementById('beethoven-save-msg');
+  if (msgEl) {
+    msgEl.style.color = '#3D6B4F';
+    msgEl.textContent = '✅ 베토벤하우스 이미지가 저장되었습니다. GitHub 동기화 후 모든 기기에 반영됩니다.';
+    setTimeout(() => { msgEl.textContent = ''; }, 5000);
+  }
+  showSaved('베토벤하우스 저장 완료 ✓');
+});
 
 /* ── 기본 데이터 ── */
 const DEFAULT_PORTFOLIO = [
@@ -229,7 +287,7 @@ document.querySelectorAll('.sb-item').forEach(btn => {
     const tab = btn.dataset.tab;
     document.getElementById('tab-' + tab).classList.add('active');
     if (tab === 'inquiries') renderInquiryList();
-    const titles = { dashboard:'대시보드', inquiries:'상담 신청 내역', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
+    const titles = { dashboard:'대시보드', inquiries:'상담 신청 내역', images:'이미지 관리', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
     document.getElementById('tabTitle').textContent = titles[tab] || tab;
   });
 });
@@ -248,11 +306,13 @@ function initAdmin() {
   updateDashboard(); renderPortfolioList(); renderSocialList();
   renderVideoList(); loadSettings(); loadEmailSettings();
   loadContentEditor(); updateInquiryBadge(); loadGitHubSettings();
+  loadImagesSettings(); loadBeethovenSettings();
   /* content.json에서 최신 데이터 → 재렌더 (모든 기기 동기화) */
   loadContentJSON().then(updated => {
     if (!updated) return;
     updateDashboard(); renderPortfolioList(); renderSocialList();
     renderVideoList(); loadSettings(); loadEmailSettings(); loadContentEditor();
+    loadImagesSettings(); loadBeethovenSettings();
   });
 }
 
@@ -1019,6 +1079,7 @@ function setupFileUpload(prefix) {
 }
 setupFileUpload('pf');
 setupFileUpload('sf');
+setupFileUpload('ab');
 
 /* ==========================================
    드래그&드롭 순서 변경

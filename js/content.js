@@ -4,6 +4,7 @@
    ================================================ */
 
 const DEFAULTS = {
+  beethoven: { images: ['','','','',''], youtubeUrl: '' },
   portfolio: [
     { id:1, title:'경기도 양평',  size:'40평', type:'베토벤 40', style:'모던 스타일', img:'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80&auto=format&fit=crop' },
     { id:2, title:'강원도 춘천',  size:'50평', type:'베토벤 50', style:'프리미엄',   img:'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=600&q=80&auto=format&fit=crop' },
@@ -37,7 +38,7 @@ async function loadContent() {
 
   /* 2순위: localStorage (이전 저장 데이터) */
   _content = {};
-  ['portfolio','social','videos','info','customText'].forEach(k => {
+  ['portfolio','social','videos','info','customText','images','beethoven'].forEach(k => {
     try {
       const v = localStorage.getItem('dg_' + k);
       if (v) _content[k] = JSON.parse(v);
@@ -152,6 +153,36 @@ function renderVideos() {
 
 function openVideo(id) { window.open(`https://www.youtube.com/watch?v=${id}`, '_blank'); }
 
+function renderBeethovenGallery() {
+  const bData = get('beethoven') || { images: [], youtubeUrl: '' };
+  const photos = (bData.images || []).filter(Boolean);
+  const ytUrl  = (bData.youtubeUrl || '').trim();
+
+  const galleryEl = document.getElementById('beethovenGallery');
+  if (galleryEl) {
+    if (photos.length) {
+      galleryEl.innerHTML = photos.map(src => `<img src="${src}" alt="베토벤하우스" loading="lazy">`).join('');
+      galleryEl.style.display = 'grid';
+    } else {
+      galleryEl.style.display = 'none';
+    }
+  }
+
+  const ytEl = document.getElementById('beethovenYT');
+  if (ytEl) {
+    if (ytUrl) { ytEl.href = ytUrl; ytEl.style.display = 'inline-flex'; }
+    else ytEl.style.display = 'none';
+  }
+}
+
+function applyImages() {
+  const images = get('images') || {};
+  if (images.aboutImg) {
+    const el = document.getElementById('aboutImg');
+    if (el) el.src = images.aboutImg;
+  }
+}
+
 function applyInfo() {
   const info = get('info');
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -185,8 +216,8 @@ function applyCustomText() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   /* 즉시 기본값으로 렌더 (빠른 첫 화면) */
-  applyInfo(); applyCustomText(); renderPortfolio(); renderSocial(); renderVideos();
+  applyInfo(); applyCustomText(); applyImages(); renderPortfolio(); renderSocial(); renderVideos(); renderBeethovenGallery();
   /* content.json 로드 후 재렌더 (모든 기기 최신 반영) */
   await loadContent();
-  applyInfo(); applyCustomText(); renderPortfolio(); renderSocial(); renderVideos();
+  applyInfo(); applyCustomText(); applyImages(); renderPortfolio(); renderSocial(); renderVideos(); renderBeethovenGallery();
 });
