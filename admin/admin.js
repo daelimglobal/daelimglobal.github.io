@@ -26,6 +26,44 @@ if (saveGasBtn) {
   });
 }
 
+/* ── GitHub 설정 저장 버튼 ── */
+const saveGhBtn = document.getElementById('saveGhBtn');
+if (saveGhBtn) {
+  saveGhBtn.addEventListener('click', () => {
+    const token  = (document.getElementById('s-gh-token').value  || '').trim();
+    const branch = (document.getElementById('s-gh-branch').value || 'gh-pages').trim();
+    const repo   = (document.getElementById('s-gh-repo').value   || '').trim();
+    localStorage.setItem('dg_gh_token',  token);
+    localStorage.setItem('dg_gh_branch', branch);
+    if (repo) localStorage.setItem('dg_gh_repo', repo);
+    loadGitHubSettings();
+    showSaved('GitHub 동기화 설정 저장 완료 ✓');
+  });
+}
+const testGhBtn = document.getElementById('testGhBtn');
+if (testGhBtn) {
+  testGhBtn.addEventListener('click', async () => {
+    const msgEl = document.getElementById('ghCommitMsg');
+    if (msgEl) { msgEl.style.color = '#888'; msgEl.textContent = '📤 GitHub에 저장 중...'; }
+    const ok = await commitContentToGitHub();
+    if (msgEl) {
+      msgEl.style.color = ok ? '#3D6B4F' : '#e05252';
+      msgEl.textContent = ok
+        ? '✅ 성공! 1~2분 후 모든 기기에 반영됩니다.'
+        : '❌ 실패 — 토큰과 브랜치명을 다시 확인해주세요.';
+    }
+  });
+}
+
+/* 사진 2·3 URL 적용 헬퍼 */
+window.applyImgUrl2 = function(prefix) {
+  const idMap = { sf2: { url: 'sf-img2-url', final: 'sf-img2-final', preview: 'sf-preview2' },
+                  sf3: { url: 'sf-img3-url', final: 'sf-img3-final', preview: 'sf-preview3' } };
+  const m = idMap[prefix]; if (!m) return;
+  const url = val(m.url); if (!url) return;
+  set(m.final, url); setPreview(m.preview, url);
+};
+
 window.copyGasCode = function() {
   const code = document.getElementById('gasCode');
   if (!code) return;
@@ -45,63 +83,119 @@ const DEFAULT_PW = 'daelim2024';
 
 function getStoredPw() { return localStorage.getItem('dg_admin_pw') || DEFAULT_PW; }
 function save(key, val) {
-  const jsonStr = JSON.stringify(val);
-  localStorage.setItem('dg_' + key, jsonStr);
-  saveToGAS(key, jsonStr);   /* GAS에도 동기화 → 모든 기기 공유 */
+  localStorage.setItem('dg_' + key, JSON.stringify(val));
+  scheduleGitHubCommit();
 }
 function load(key, fallback) {
   try { const v = localStorage.getItem('dg_' + key); return v ? JSON.parse(v) : fallback; } catch(e) { return fallback; }
 }
 
-/* ── GAS 콘텐츠 동기화 ── */
-function getGasUrl() {
-  return (localStorage.getItem('dg_gas_url') || (window.DG_CONFIG && window.DG_CONFIG.gasUrl) || '').trim();
+/* ── GitHub content.json 동기화 (모든 기기 공유 핵심) ── */
+function detectRepo() {
+  const h = window.location.hostname;
+  if (h.endsWith('.github.io')) {
+    const user = h.replace('.github.io', '');
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    return parts.length ? `${user}/${parts[0]}` : '';
+  }
+  return localStorage.getItem('dg_gh_repo') || '';
 }
 
-function saveToGAS(key, rawStr) {
-  const gasUrl = getGasUrl();
-  if (!gasUrl) return;
-  if (rawStr && rawStr.length > 800000) return; /* base64 이미지 등 너무 큰 값은 건너뜀 */
-  fetch(gasUrl, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: new URLSearchParams({ action: 'write_content', key, value: rawStr || '' })
-  }).catch(() => {});
-}
+async function commitContentToGitHub() {
+  const token  = (localStorage.getItem('dg_gh_token')  || '').trim();
+  const branch = (localStorage.getItem('dg_gh_branch') || 'gh-pages').trim();
+  const repo   = detectRepo() || (localStorage.getItem('dg_gh_repo') || '').trim();
+  if (!token || !repo) return false;
 
-async function loadAllContentFromGAS() {
-  const gasUrl = getGasUrl();
-  if (!gasUrl) return false;
+  const content = {
+    portfolio:  load('portfolio', DEFAULT_PORTFOLIO),
+    social:     load('social',    DEFAULT_SOCIAL),
+    videos:     load('videos',    []),
+    info:       load('info',      DEFAULT_INFO),
+    customText: load('customText', {}),
+  };
+  const jsonStr = JSON.stringify(content, null, 2);
+  const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+  const apiUrl  = `https://api.github.com/repos/${repo}/contents/content.json`;
+
   try {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 10000);
-    const resp = await fetch(gasUrl + '?action=read_content&t=' + Date.now(), { signal: ac.signal });
-    clearTimeout(timer);
-    const content = await resp.json();
-    if (content && typeof content === 'object' && Object.keys(content).length > 0) {
-      Object.keys(content).forEach(k => {
-        if (content[k] !== undefined && content[k] !== '')
-          localStorage.setItem('dg_' + k, content[k]);
-      });
-      return true;
+    let sha = null;
+    const getResp = await fetch(`${apiUrl}?ref=${branch}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (getResp.ok) sha = (await getResp.json()).sha;
+
+    const body = { message: '관리자 콘텐츠 업데이트', content: encoded, branch };
+    if (sha) body.sha = sha;
+
+    const putResp = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return putResp.ok;
+  } catch(e) { return false; }
+}
+
+let _commitTimer = null;
+function scheduleGitHubCommit() {
+  if (!(localStorage.getItem('dg_gh_token') || '').trim()) return;
+  clearTimeout(_commitTimer);
+  _commitTimer = setTimeout(async () => {
+    const msgEl = document.getElementById('ghCommitMsg');
+    if (msgEl) { msgEl.style.color = '#888'; msgEl.textContent = '📤 저장 중...'; }
+    const ok = await commitContentToGitHub();
+    if (msgEl) {
+      msgEl.style.color = ok ? '#3D6B4F' : '#e05252';
+      msgEl.textContent = ok
+        ? '✅ 모든 기기에 반영됨 (GitHub 배포 후 1~2분 내 적용)'
+        : '❌ GitHub 저장 실패 — 토큰·브랜치를 확인해주세요';
+      setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 6000);
     }
-  } catch(e) {}
-  return false;
+  }, 2500);
+}
+
+/* content.json에서 최신 데이터 로드 (관리자 패널 동기화) */
+async function loadContentJSON() {
+  try {
+    const resp = await fetch('/content.json', { cache: 'no-store' });
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    ['portfolio','social','videos','info','customText'].forEach(k => {
+      if (data[k] !== undefined) localStorage.setItem('dg_' + k, JSON.stringify(data[k]));
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+function loadGitHubSettings() {
+  const tokenEl  = document.getElementById('s-gh-token');
+  const branchEl = document.getElementById('s-gh-branch');
+  const repoEl   = document.getElementById('s-gh-repo');
+  if (tokenEl)  tokenEl.value  = localStorage.getItem('dg_gh_token')  || '';
+  if (branchEl) branchEl.value = localStorage.getItem('dg_gh_branch') || 'gh-pages';
+  if (repoEl)   repoEl.value   = detectRepo() || localStorage.getItem('dg_gh_repo') || '';
+  const badge = document.getElementById('gh-status-badge');
+  if (badge) {
+    const hasToken = !!(localStorage.getItem('dg_gh_token') || '').trim();
+    badge.textContent = hasToken ? '✓ 설정됨' : '미설정';
+    badge.style.cssText = hasToken ? 'color:#3D6B4F;font-size:12px;font-weight:700;margin-left:6px' : 'color:#e05252;font-size:12px;margin-left:6px';
+  }
 }
 
 /* ── 기본 데이터 ── */
 const DEFAULT_PORTFOLIO = [
-  { id:1, title:'경기도 양평', size:'40평', type:'베토벤 40', style:'모던 스타일', img:'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80&auto=format&fit=crop' },
-  { id:2, title:'강원도 춘천', size:'50평', type:'베토벤 50', style:'프리미엄', img:'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=600&q=80&auto=format&fit=crop' },
-  { id:3, title:'충청북도 충주', size:'40평', type:'베토벤 40', style:'유럽풍', img:'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80&auto=format&fit=crop' },
-  { id:4, title:'전라북도 전주', size:'30평', type:'베토벤 30', style:'모던', img:'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80&auto=format&fit=crop' },
-  { id:5, title:'경상남도 거제', size:'50평', type:'베토벤 50', style:'럭셔리', img:'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&q=80&auto=format&fit=crop' },
-  { id:6, title:'제주도', size:'40평', type:'베토벤 40', style:'자연형', img:'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=600&q=80&auto=format&fit=crop' },
+  { id:1, title:'경기도 양평',  size:'40평', type:'베토벤 40', style:'모던 스타일', img:'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80&auto=format&fit=crop' },
+  { id:2, title:'강원도 춘천',  size:'50평', type:'베토벤 50', style:'프리미엄',   img:'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=600&q=80&auto=format&fit=crop' },
+  { id:3, title:'충청북도 충주',size:'40평', type:'베토벤 40', style:'유럽풍',    img:'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80&auto=format&fit=crop' },
+  { id:4, title:'전라북도 전주',size:'30평', type:'베토벤 30', style:'모던',      img:'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80&auto=format&fit=crop' },
+  { id:5, title:'경상남도 거제',size:'50평', type:'베토벤 50', style:'럭셔리',    img:'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&q=80&auto=format&fit=crop' },
+  { id:6, title:'제주도',       size:'40평', type:'베토벤 40', style:'자연형',    img:'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=600&q=80&auto=format&fit=crop' },
 ];
 const DEFAULT_SOCIAL = [
-  { id:1, tag:'주거환경 개선', title:'독거노인 주거환경 개선 사업', desc:'취약계층 어르신들의 낡은 주거환경을 개선하여 안전하고 따뜻한 삶을 지원합니다.', img:'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&q=80&auto=format&fit=crop', date:'2024.03' },
-  { id:2, tag:'사랑의 집짓기', title:'저소득층 주거 개보수 지원', desc:'저소득층 가정의 도배·장판 교체 및 노후 시설 개선을 통해 더 나은 삶의 환경을 만들어 드립니다.', img:'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=600&q=80&auto=format&fit=crop', date:'2024.06' },
-  { id:3, tag:'지역사회 봉사', title:'지역아동센터 환경개선 활동', desc:'아이들이 안전하게 성장할 수 있도록 지역아동센터의 시설을 개선하고 봉사활동을 진행합니다.', img:'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&q=80&auto=format&fit=crop', date:'2024.09' },
+  { id:1, tag:'주거환경 개선', title:'독거노인 주거환경 개선 사업', desc:'취약계층 어르신들의 낡은 주거환경을 개선하여 안전하고 따뜻한 삶을 지원합니다.', img:'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', youtubeUrl:'', date:'2024.03' },
+  { id:2, tag:'사랑의 집짓기', title:'저소득층 주거 개보수 지원', desc:'저소득층 가정의 도배·장판 교체 및 노후 시설 개선을 통해 더 나은 삶의 환경을 만들어 드립니다.', img:'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', youtubeUrl:'', date:'2024.06' },
+  { id:3, tag:'지역사회 봉사', title:'지역아동센터 환경개선 활동', desc:'아이들이 안전하게 성장할 수 있도록 지역아동센터의 시설을 개선하고 봉사활동을 진행합니다.', img:'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&q=80&auto=format&fit=crop', photo2:'', photo3:'', youtubeUrl:'', date:'2024.09' },
 ];
 const DEFAULT_INFO = { phone:'1668-3603', hours:'평일 09:00 - 18:00', address:'전국 어디서나 상담 가능', kakao:'#', copyright:'© 2024 (주)대림글로벌 DAELIM GLOBAL. All rights reserved.', footerHours:'평일 09:00 - 18:00' };
 
@@ -151,24 +245,14 @@ function showSaved(msg = '저장되었습니다 ✓') {
 /* ── 관리자 초기화 ── */
 function initAdmin() {
   /* 즉시 localStorage 기반으로 렌더 */
-  updateDashboard();
-  renderPortfolioList();
-  renderSocialList();
-  renderVideoList();
-  loadSettings();
-  loadEmailSettings();
-  loadContentEditor();
-  updateInquiryBadge();
-  /* GAS에서 최신 콘텐츠 로드 → localStorage 업데이트 → 재렌더 (모든 기기 동기화) */
-  loadAllContentFromGAS().then(updated => {
+  updateDashboard(); renderPortfolioList(); renderSocialList();
+  renderVideoList(); loadSettings(); loadEmailSettings();
+  loadContentEditor(); updateInquiryBadge(); loadGitHubSettings();
+  /* content.json에서 최신 데이터 → 재렌더 (모든 기기 동기화) */
+  loadContentJSON().then(updated => {
     if (!updated) return;
-    updateDashboard();
-    renderPortfolioList();
-    renderSocialList();
-    renderVideoList();
-    loadSettings();
-    loadEmailSettings();
-    loadContentEditor();
+    updateDashboard(); renderPortfolioList(); renderSocialList();
+    renderVideoList(); loadSettings(); loadEmailSettings(); loadContentEditor();
   });
 }
 
@@ -533,8 +617,14 @@ function renderSocialList() {
 
 document.getElementById('addSocialBtn').addEventListener('click', () => {
   document.getElementById('socialFormTitle').textContent = '사회공헌 활동 추가';
-  clearForm(['sf-tag','sf-date','sf-title','sf-desc','sf-img-url','sf-img-final','sf-edit-id']);
+  clearForm(['sf-tag','sf-date','sf-title','sf-desc',
+             'sf-img-url','sf-img-final',
+             'sf-img2-url','sf-img2-final',
+             'sf-img3-url','sf-img3-final',
+             'sf-youtube-url','sf-edit-id']);
   setPreview('sf-preview', '');
+  setPreview('sf-preview2', '');
+  setPreview('sf-preview3', '');
   document.getElementById('socialForm').style.display = 'block';
   document.getElementById('socialForm').scrollIntoView({ behavior:'smooth' });
 });
@@ -544,14 +634,16 @@ function editSocial(id) {
   const a = items.find(x => x.id === id);
   if (!a) return;
   document.getElementById('socialFormTitle').textContent = '사회공헌 활동 편집';
-  set('sf-tag', a.tag);
-  set('sf-date', a.date);
-  set('sf-title', a.title);
-  set('sf-desc', a.desc);
-  set('sf-img-url', a.img);
-  set('sf-img-final', a.img);
+  set('sf-tag', a.tag);  set('sf-date', a.date);
+  set('sf-title', a.title); set('sf-desc', a.desc);
+  set('sf-img-url', a.img);   set('sf-img-final', a.img);
+  set('sf-img2-url', a.photo2||''); set('sf-img2-final', a.photo2||'');
+  set('sf-img3-url', a.photo3||''); set('sf-img3-final', a.photo3||'');
+  set('sf-youtube-url', a.youtubeUrl||'');
   set('sf-edit-id', a.id);
   setPreview('sf-preview', a.img);
+  setPreview('sf-preview2', a.photo2||'');
+  setPreview('sf-preview3', a.photo3||'');
   document.getElementById('socialForm').style.display = 'block';
   document.getElementById('socialForm').scrollIntoView({ behavior:'smooth' });
 }
@@ -563,11 +655,14 @@ document.getElementById('saveSocialBtn').addEventListener('click', () => {
   let items = load('social', DEFAULT_SOCIAL);
   const editId = val('sf-edit-id');
   const item = {
-    id: editId ? parseInt(editId) : Date.now(),
+    id:         editId ? parseInt(editId) : Date.now(),
     tag, title,
-    desc: val('sf-desc'),
-    img:  val('sf-img-final') || 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&q=80',
-    date: val('sf-date'),
+    desc:       val('sf-desc'),
+    img:        val('sf-img-final')  || 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&q=80',
+    photo2:     val('sf-img2-final') || '',
+    photo3:     val('sf-img3-final') || '',
+    youtubeUrl: val('sf-youtube-url') || '',
+    date:       val('sf-date'),
   };
   if (editId) items = items.map(x => x.id === item.id ? item : x);
   else items.push(item);
@@ -828,7 +923,6 @@ document.getElementById('changePwBtn').addEventListener('click', () => {
   if (newPw.length < 4) { msg.className = 'pw-msg err'; msg.textContent = '비밀번호는 4자 이상이어야 합니다.'; return; }
   if (newPw !== newPw2) { msg.className = 'pw-msg err'; msg.textContent = '새 비밀번호가 일치하지 않습니다.'; return; }
   localStorage.setItem('dg_admin_pw', newPw);
-  saveToGAS('admin_pw', newPw);   /* 모든 기기에 비밀번호 동기화 */
   msg.className = 'pw-msg ok'; msg.textContent = '비밀번호가 변경되었습니다.';
   ['s-old-pw','s-new-pw','s-new-pw2'].forEach(id => document.getElementById(id).value = '');
 });

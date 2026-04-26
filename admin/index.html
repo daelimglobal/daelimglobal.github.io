@@ -235,7 +235,7 @@
         <div class="fg"><label>활동 제목 *</label><input type="text" id="sf-title" placeholder="예: 독거노인 주거환경 개선 사업"></div>
         <div class="fg"><label>활동 설명 *</label><textarea id="sf-desc" rows="3" placeholder="활동 내용을 상세히 설명해주세요."></textarea></div>
         <div class="fg">
-          <label>활동 사진</label>
+          <label>활동 사진 1 (대표)</label>
           <div class="img-upload-area">
             <div class="img-preview" id="sf-preview"><span>이미지 없음</span></div>
             <div class="img-input-row">
@@ -244,11 +244,37 @@
             </div>
             <div class="img-drop-zone">
               <input type="file" accept="image/*" id="sf-file" hidden>
-              <label for="sf-file">📁 파일 선택 또는 여기에 드래그&드롭</label>
+              <label for="sf-file">📁 파일 선택 또는 드래그&드롭</label>
             </div>
           </div>
         </div>
+        <div class="fg">
+          <label>활동 사진 2</label>
+          <div class="img-upload-area">
+            <div class="img-preview" id="sf-preview2"><span>이미지 없음</span></div>
+            <div class="img-input-row">
+              <input type="text" id="sf-img2-url" placeholder="이미지 URL 입력 (https://...)">
+              <button type="button" class="btn-sm btn-outline" onclick="applyImgUrl2('sf2')">URL 적용</button>
+            </div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>활동 사진 3</label>
+          <div class="img-upload-area">
+            <div class="img-preview" id="sf-preview3"><span>이미지 없음</span></div>
+            <div class="img-input-row">
+              <input type="text" id="sf-img3-url" placeholder="이미지 URL 입력 (https://...)">
+              <button type="button" class="btn-sm btn-outline" onclick="applyImgUrl2('sf3')">URL 적용</button>
+            </div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>🎬 유튜브 채널/영상 주소</label>
+          <input type="url" id="sf-youtube-url" placeholder="https://www.youtube.com/@채널명 또는 영상 주소">
+        </div>
         <input type="hidden" id="sf-img-final">
+        <input type="hidden" id="sf-img2-final">
+        <input type="hidden" id="sf-img3-final">
         <input type="hidden" id="sf-edit-id">
         <div class="form-actions">
           <button class="btn-green" id="saveSocialBtn">저장</button>
@@ -349,6 +375,45 @@
     <!-- ─── 기본 설정 ─── -->
     <div id="tab-settings" class="tab-content">
       <div class="settings-grid">
+
+        <!-- GitHub 콘텐츠 동기화 (모바일 즉시 반영 핵심) -->
+        <div class="settings-block full" style="border-top:3px solid #2196F3;">
+          <h3>🔄 모든 기기 즉시 반영 설정 <span id="gh-status-badge"></span></h3>
+          <p style="font-size:13px;color:#555;margin-bottom:12px">관리자가 저장하면 <b>2~3초 후 자동으로 GitHub에 커밋</b>됩니다. 모바일·PC 모든 기기에서 1~2분 내 반영됩니다.</p>
+          <div class="email-setup-steps">
+            <div class="email-step">
+              <span class="email-step-num" style="background:#2196F3">1</span>
+              <div>
+                <strong>GitHub Personal Access Token 발급</strong>
+                <p><a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> 접속<br>
+                Note(이름): 아무거나 입력 → Expiration: No expiration → <b>repo</b> 체크 → Generate token<br>
+                발급된 토큰을 복사해서 아래에 붙여넣기</p>
+              </div>
+            </div>
+            <div class="email-step">
+              <span class="email-step-num" style="background:#2196F3">2</span>
+              <div>
+                <strong>배포 브랜치 확인</strong>
+                <p>GitHub 저장소 → Settings → Pages → Branch 항목에 표시된 브랜치명을 아래에 입력 (보통 <b>gh-pages</b>)</p>
+              </div>
+            </div>
+          </div>
+          <div class="fg" style="margin-top:14px">
+            <label>🔑 GitHub Personal Access Token <span id="gh-status-badge"></span></label>
+            <input type="password" id="s-gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+          </div>
+          <div class="fg">
+            <label>📁 배포 브랜치명</label>
+            <input type="text" id="s-gh-branch" placeholder="gh-pages" value="gh-pages">
+          </div>
+          <div class="fg">
+            <label>📦 GitHub 저장소 (자동감지)</label>
+            <input type="text" id="s-gh-repo" placeholder="username/repository" readonly style="background:#f5f5f5;color:#888">
+          </div>
+          <button class="btn-primary" id="saveGhBtn" style="margin-top:12px">🔄 동기화 설정 저장</button>
+          <button class="btn-outline" id="testGhBtn" style="margin-top:12px;margin-left:8px">📤 지금 바로 동기화</button>
+          <div id="ghCommitMsg" style="font-size:13px;min-height:20px;margin-top:8px"></div>
+        </div>
 
         <!-- Google 시트 연동 -->
         <div class="settings-block full" style="border-top:3px solid #34A853;">
