@@ -3,6 +3,21 @@
    기본 비밀번호: daelim2024
    ================================================ */
 
+window.copyGasCode = function() {
+  const code = document.getElementById('gasCode');
+  if (!code) return;
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    showSaved('Apps Script 코드가 복사되었습니다 ✓');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = code.textContent;
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showSaved('코드가 복사되었습니다 ✓');
+  });
+};
+
 const DEFAULT_PW = 'daelim2024';
 
 function getStoredPw() { return localStorage.getItem('dg_admin_pw') || DEFAULT_PW; }
@@ -56,7 +71,8 @@ document.querySelectorAll('.sb-item').forEach(btn => {
     btn.classList.add('active');
     const tab = btn.dataset.tab;
     document.getElementById('tab-' + tab).classList.add('active');
-    const titles = { dashboard:'대시보드', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
+    if (tab === 'inquiries') renderInquiryList();
+    const titles = { dashboard:'대시보드', inquiries:'상담 신청 내역', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
     document.getElementById('tabTitle').textContent = titles[tab] || tab;
   });
 });
@@ -100,9 +116,11 @@ function updateDashboard() {
   if (newEl) newEl.textContent = newCount > 0 ? `(미확인 ${newCount}건)` : '';
 }
 
-function updateInquiryBadge() {
-  const inq = JSON.parse(localStorage.getItem('dg_submissions') || '[]');
-  const n   = inq.filter(i => i.status === '미확인').length;
+function updateInquiryBadge(n) {
+  if (n === undefined) {
+    const inq = JSON.parse(localStorage.getItem('dg_submissions') || '[]');
+    n = inq.filter(i => i.status === '미확인').length;
+  }
   const badge = document.getElementById('sbBadge');
   if (!badge) return;
   if (n > 0) { badge.textContent = n; badge.style.display = 'inline-block'; }
@@ -119,9 +137,61 @@ function saveInquiries(list) {
   localStorage.setItem('dg_submissions', JSON.stringify(list));
 }
 
-function renderInquiryList() {
-  const all  = getInquiries();
-  const fv   = document.getElementById('inqFilter');
+/* ── 상담 신청 렌더 (Google 시트 우선, 없으면 localStorage) ── */
+async function renderInquiryList() {
+  const container = document.getElementById('inquiryList');
+  if (!container) return;
+
+  const gasUrl = (localStorage.getItem('dg_gas_url') || '').trim();
+
+  /* Google 시트 연동 안내 박스 */
+  const gasBox = document.getElementById('gasSetupBox');
+  if (gasBox) gasBox.style.display = gasUrl ? 'none' : 'flex';
+
+  /* 이메일 알림 안내 박스 */
+  const emailKey = ((window.DG_CONFIG && window.DG_CONFIG.w3key) || localStorage.getItem('dg_w3forms_key') || '').trim();
+  const setupBox = document.getElementById('emailSetupBox');
+  if (setupBox) setupBox.style.display = emailKey ? 'none' : 'flex';
+
+  /* 로딩 표시 */
+  container.innerHTML = '<div class="inq-empty">⏳ 신청 내역을 불러오는 중...</div>';
+
+  let all = [];
+  if (gasUrl) {
+    /* Google 시트에서 가져오기 */
+    try {
+      const resp = await fetch(gasUrl + '?t=' + Date.now());
+      const remote = await resp.json();
+      /* 구글시트 행 → 객체 변환 (헤더행 배열 or 객체 배열 둘 다 처리) */
+      all = remote.map((item, idx) => ({
+        id:      item.id || (Date.now() - idx),
+        status:  item['상태'] || '미확인',
+        신청시각: item['신청시각'] || '',
+        성함:    item['성함']    || '',
+        연락처:  item['연락처']  || '',
+        부지지역: item['부지지역'] || '',
+        희망평형: item['희망평형'] || '',
+        예상예산: item['예상예산'] || '',
+        문의내용: item['문의내용'] || '',
+      }));
+    } catch (err) {
+      console.warn('Google 시트 조회 실패:', err);
+      container.innerHTML = '<div class="inq-empty" style="color:#e05252">⚠️ Google 시트 연결에 실패했습니다. URL을 확인해주세요.</div>';
+      return;
+    }
+  } else {
+    /* Google 시트 미연동 → localStorage */
+    all = getInquiries();
+  }
+
+  /* 상태 오버레이 (관리자가 변경한 상태를 localStorage에 저장해 덮어씀) */
+  const statusMap = JSON.parse(localStorage.getItem('dg_inq_status') || '{}');
+  all = all.map(item => {
+    const key = item.신청시각 + item.성함;
+    return { ...item, status: statusMap[key] || item.status };
+  });
+
+  const fv = document.getElementById('inqFilter');
   const filter = fv ? fv.value : 'all';
   const list = filter === 'all' ? all : all.filter(i => i.status === filter);
 
@@ -131,24 +201,17 @@ function renderInquiryList() {
   if (totalEl) totalEl.textContent = all.length;
   if (newEl)   newEl.textContent   = newCount;
 
-  const emailKey = (localStorage.getItem('dg_w3forms_key') || '').trim();
-  const setupBox = document.getElementById('emailSetupBox');
-  if (setupBox) setupBox.style.display = emailKey ? 'none' : 'flex';
-
-  const container = document.getElementById('inquiryList');
-  if (!container) return;
-
   if (!list.length) {
-    container.innerHTML = `<div class="inq-empty">
-      ${all.length === 0 ? '📭 아직 상담 신청이 없습니다.' : '해당 조건의 신청이 없습니다.'}
-    </div>`;
+    container.innerHTML = `<div class="inq-empty">${all.length === 0 ? '📭 아직 상담 신청이 없습니다.' : '해당 조건의 신청이 없습니다.'}</div>`;
+    updateInquiryBadge(newCount);
     return;
   }
 
   container.innerHTML = list.map(item => {
     const statusClass = item.status === '미확인' ? 'status-new' : item.status === '처리완료' ? 'status-done' : 'status-read';
+    const safeKey = encodeURIComponent(item.신청시각 + '|' + item.성함);
     return `
-    <div class="inq-card ${item.status === '미확인' ? 'inq-card-new' : ''}" id="inq-${item.id}">
+    <div class="inq-card ${item.status === '미확인' ? 'inq-card-new' : ''}">
       <div class="inq-card-header">
         <span class="inq-status ${statusClass}">${item.status}</span>
         <div class="inq-name-phone">
@@ -161,16 +224,15 @@ function renderInquiryList() {
           ${item.예상예산 ? `<span class="inq-tag">${item.예상예산}</span>` : ''}
         </div>
         <div class="inq-card-actions">
-          <button class="btn-sm btn-outline" onclick="toggleInqDetail(${item.id})">상세보기</button>
-          <select class="inq-status-sel" onchange="changeInqStatus(${item.id}, this.value)">
+          <button class="btn-sm btn-outline" onclick="this.closest('.inq-card').querySelector('.inq-detail').style.display = this.closest('.inq-card').querySelector('.inq-detail').style.display==='none'?'block':'none'">상세보기</button>
+          <select class="inq-status-sel" onchange="saveInqStatus('${safeKey}', this.value, this.closest('.inq-card'))">
             <option ${item.status==='미확인'?'selected':''}>미확인</option>
             <option ${item.status==='확인완료'?'selected':''}>확인완료</option>
             <option ${item.status==='처리완료'?'selected':''}>처리완료</option>
           </select>
-          <button class="btn-del" onclick="deleteInq(${item.id})" title="삭제">🗑</button>
         </div>
       </div>
-      <div class="inq-detail" id="inq-detail-${item.id}" style="display:none">
+      <div class="inq-detail" style="display:none">
         <div class="inq-detail-grid">
           <div><label>부지 지역</label><span>${item.부지지역 || '-'}</span></div>
           <div><label>희망 평형</label><span>${item.희망평형 || '-'}</span></div>
@@ -181,8 +243,22 @@ function renderInquiryList() {
       </div>
     </div>`;
   }).join('');
-  updateInquiryBadge();
+  updateInquiryBadge(newCount);
 }
+
+window.saveInqStatus = function(safeKey, status, card) {
+  const key = decodeURIComponent(safeKey);
+  const map = JSON.parse(localStorage.getItem('dg_inq_status') || '{}');
+  map[key] = status;
+  localStorage.setItem('dg_inq_status', JSON.stringify(map));
+  const badge = card.querySelector('.inq-status');
+  if (badge) {
+    badge.textContent = status;
+    badge.className = 'inq-status ' + (status==='미확인'?'status-new':status==='처리완료'?'status-done':'status-read');
+  }
+  card.classList.toggle('inq-card-new', status === '미확인');
+  showSaved('상태 변경됨');
+};
 
 window.toggleInqDetail = function(id) {
   const el = document.getElementById(`inq-detail-${id}`);
@@ -527,6 +603,10 @@ function loadEmailSettings() {
     embeddedNote.style.display = embeddedKey ? 'block' : 'none';
   }
 
+  const gasUrl = localStorage.getItem('dg_gas_url') || '';
+  const gasEl  = document.getElementById('s-gas-url');
+  if (gasEl) gasEl.value = gasUrl;
+
   const badge = document.getElementById('email-status-badge');
   if (badge) {
     if (key.trim()) {
@@ -537,16 +617,26 @@ function loadEmailSettings() {
       badge.style.cssText = 'color:#e05252;font-size:12px;margin-left:6px';
     }
   }
+  const gasBadge = document.getElementById('gas-status-badge');
+  if (gasBadge) {
+    if (gasUrl.trim()) {
+      gasBadge.textContent = '✓ 연동됨'; gasBadge.style.cssText = 'color:#3D6B4F;font-size:12px;font-weight:700;margin-left:6px';
+    } else {
+      gasBadge.textContent = '미연동'; gasBadge.style.cssText = 'color:#e05252;font-size:12px;margin-left:6px';
+    }
+  }
 }
 
 document.getElementById('saveEmailBtn').addEventListener('click', () => {
-  const key   = (document.getElementById('s-w3key').value || '').trim();
-  const email = (document.getElementById('s-notify-email').value || '').trim();
-  localStorage.setItem('dg_w3forms_key',   key);
+  const key    = (document.getElementById('s-w3key').value || '').trim();
+  const email  = (document.getElementById('s-notify-email').value || '').trim();
+  const gasUrl = (document.getElementById('s-gas-url').value || '').trim();
+  localStorage.setItem('dg_w3forms_key',  key);
   localStorage.setItem('dg_notify_email', email);
+  localStorage.setItem('dg_gas_url',      gasUrl);
   loadEmailSettings();
   renderInquiryList();
-  showSaved('이메일 알림 설정이 저장되었습니다 ✓');
+  showSaved('설정이 저장되었습니다 ✓');
 });
 
 document.getElementById('testEmailBtn').addEventListener('click', async () => {

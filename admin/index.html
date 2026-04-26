@@ -131,6 +131,17 @@
     <!-- ─── 상담 신청 내역 ─── -->
     <div id="tab-inquiries" class="tab-content">
 
+      <!-- Google 시트 미연동 안내 -->
+      <div class="email-setup-box" id="gasSetupBox" style="background:#E8F5E9;border-color:#66BB6A;">
+        <div class="esb-icon">📊</div>
+        <div class="esb-content">
+          <strong>Google 스프레드시트가 연동되지 않았습니다</strong>
+          <p>Google 시트를 연동하면 <b>PC·모바일 어느 기기</b>에서 신청해도 이곳에서 한눈에 확인할 수 있습니다.<br>설정은 <b>기본 설정 탭</b>에서 Google 시트 URL을 입력하면 됩니다.</p>
+          <button class="btn-primary btn-sm" onclick="document.querySelector('[data-tab=settings]').click()">📊 Google 시트 연동하기</button>
+        </div>
+      </div>
+
+      <!-- 이메일 알림 미설정 안내 -->
       <div class="email-setup-box" id="emailSetupBox">
         <div class="esb-icon">📧</div>
         <div class="esb-content">
@@ -332,6 +343,67 @@
     <!-- ─── 기본 설정 ─── -->
     <div id="tab-settings" class="tab-content">
       <div class="settings-grid">
+
+        <!-- Google 시트 연동 -->
+        <div class="settings-block full" style="border-top:3px solid #34A853;">
+          <h3>📊 Google 스프레드시트 연동 <small style="font-size:12px;color:#666;font-weight:400">(PC·모바일 모든 신청 한곳에서 확인)</small></h3>
+          <div class="email-setup-steps">
+            <div class="email-step">
+              <span class="email-step-num" style="background:#34A853">1</span>
+              <div>
+                <strong>Google 스프레드시트 새로 만들기</strong>
+                <p><a href="https://sheets.new" target="_blank">sheets.new</a> 를 클릭해 새 구글 시트를 만드세요.</p>
+              </div>
+            </div>
+            <div class="email-step">
+              <span class="email-step-num" style="background:#34A853">2</span>
+              <div>
+                <strong>Apps Script 열기 → 코드 붙여넣기</strong>
+                <p>메뉴 <b>확장 프로그램 → Apps Script</b> 클릭 → 아래 코드 전체를 복사해서 붙여넣기 → 💾 저장</p>
+                <button class="btn-sm btn-outline" style="margin-top:6px" onclick="document.getElementById('gasCodeBlock').style.display=document.getElementById('gasCodeBlock').style.display==='none'?'block':'none'">📋 코드 보기 / 숨기기</button>
+                <div id="gasCodeBlock" style="display:none;margin-top:10px;position:relative">
+                  <button onclick="copyGasCode()" class="btn-sm btn-outline" style="position:absolute;top:8px;right:8px;z-index:1">복사</button>
+                  <pre id="gasCode" style="background:#1e1e2e;color:#cdd6f4;padding:14px 14px 14px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.6;white-space:pre">const SHEET = '상담신청';
+function doPost(e){
+  try{
+    var ss=SpreadsheetApp.getActiveSpreadsheet();
+    var sh=ss.getSheetByName(SHEET)||ss.insertSheet(SHEET);
+    if(sh.getLastRow()===0)
+      sh.appendRow(['신청시각','성함','연락처','부지지역','희망평형','예상예산','문의내용','상태']);
+    var d=JSON.parse(e.postData.contents);
+    sh.appendRow([d['신청시각']||'',d['성함']||'',d['연락처']||'',
+                  d['부지지역']||'',d['희망평형']||'',d['예상예산']||'',
+                  d['문의내용']||'','미확인']);
+    return ContentService.createTextOutput('ok');
+  }catch(err){return ContentService.createTextOutput('error');}
+}
+function doGet(){
+  var sh=SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET);
+  if(!sh)return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
+  var rows=sh.getDataRange().getValues();
+  if(rows.length<=1)return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
+  var h=rows[0],data=rows.slice(1).reverse().map(function(r,i){
+    var o={id:Date.now()-i};h.forEach(function(k,j){o[k]=r[j];});return o;
+  });
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}</pre>
+                </div>
+              </div>
+            </div>
+            <div class="email-step">
+              <span class="email-step-num" style="background:#34A853">3</span>
+              <div>
+                <strong>배포 → 웹 앱으로 배포</strong>
+                <p>상단 <b>배포 → 새 배포</b> 클릭 → 유형: <b>웹 앱</b> → 액세스 권한: <b>모든 사용자</b> → 배포 클릭<br>생성된 <b>웹 앱 URL</b>을 아래에 붙여넣기</p>
+              </div>
+            </div>
+          </div>
+          <div class="fg" style="margin-top:14px">
+            <label>🔗 Google Apps Script 웹 앱 URL <span id="gas-status-badge"></span></label>
+            <input type="url" id="s-gas-url" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+          <p style="font-size:12px;color:#888;margin-top:4px">설정 저장 후 고객이 상담 신청하면 Google 스프레드시트에 자동으로 기록되고, 이 패널에서도 바로 확인할 수 있습니다.</p>
+        </div>
 
         <div class="settings-block full email-settings-block">
           <h3>📧 상담 신청 이메일 알림 설정</h3>

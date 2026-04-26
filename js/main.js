@@ -136,8 +136,19 @@ if (form) {
       } catch(err) { console.warn('이메일 전송 오류:', err); }
     }
 
-    form.style.display = 'none';
-    formDone.style.display = 'block';
+    /* 3. Google 시트 저장 (어느 기기에서 신청해도 관리자 패널에서 확인 가능) */
+    const gasUrl = ((window.DG_CONFIG && window.DG_CONFIG.gasUrl) ||
+                    localStorage.getItem('dg_gas_url') || '').trim();
+    if (gasUrl) {
+      try {
+        fetch(gasUrl, {
+          method: 'POST',
+          mode:   'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(data)
+        });
+      } catch (err) { console.warn('Google 시트 저장 오류:', err); }
+    }
   });
 }
 
