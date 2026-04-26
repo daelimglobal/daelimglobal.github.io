@@ -160,22 +160,34 @@ function saveInquiries(list) {
   localStorage.setItem('dg_submissions', JSON.stringify(list));
 }
 
-/* JSONP helper — CORS-free read from Google Apps Script */
-function fetchFromGAS(url) {
-  return new Promise((resolve, reject) => {
-    const cbName = 'dg_cb_' + Date.now();
-    const script = document.createElement('script');
-    window[cbName] = (data) => {
-      resolve(Array.isArray(data) ? data : []);
-      delete window[cbName]; script.remove();
-    };
-    script.onerror = () => { reject(new Error('script load failed')); delete window[cbName]; script.remove(); };
-    script.src = url + '?action=read&callback=' + cbName + '&t=' + Date.now();
-    document.head.appendChild(script);
-    setTimeout(() => {
-      if (window[cbName]) { reject(new Error('timeout')); delete window[cbName]; script.remove(); }
-    }, 20000);
-  });
+/* GAS 데이터 읽기 — fetch 우선, 실패 시 JSONP 폴백 */
+async function fetchFromGAS(url) {
+  /* 1차: fetch (GAS GET은 CORS 허용) */
+  try {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 12000);
+    const resp = await fetch(url + '?action=read&t=' + Date.now(), { signal: ac.signal });
+    clearTimeout(timer);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    return Array.isArray(data) ? data : [];
+  } catch (fetchErr) {
+    /* 2차 폴백: JSONP (CORS 완전 우회) */
+    return new Promise((resolve, reject) => {
+      const cbName = 'dg_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      const script = document.createElement('script');
+      window[cbName] = (data) => {
+        resolve(Array.isArray(data) ? data : []);
+        delete window[cbName]; script.remove();
+      };
+      script.onerror = () => { reject(new Error('jsonp failed')); delete window[cbName]; script.remove(); };
+      script.src = url + '?action=read&callback=' + cbName + '&t=' + Date.now();
+      document.head.appendChild(script);
+      setTimeout(() => {
+        if (window[cbName]) { reject(new Error('jsonp timeout')); delete window[cbName]; script.remove(); }
+      }, 18000);
+    });
+  }
 }
 
 let _inqLoading = false;
