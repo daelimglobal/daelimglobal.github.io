@@ -160,12 +160,28 @@ function saveInquiries(list) {
   localStorage.setItem('dg_submissions', JSON.stringify(list));
 }
 
+/* JSONP helper — CORS-free read from Google Apps Script */
+function fetchFromGAS(url) {
+  return new Promise((resolve) => {
+    const cbName = 'dg_cb_' + Date.now();
+    const script = document.createElement('script');
+    window[cbName] = (data) => {
+      resolve(Array.isArray(data) ? data : []);
+      delete window[cbName]; script.remove();
+    };
+    script.onerror = () => { resolve([]); delete window[cbName]; script.remove(); };
+    script.src = url + '?action=read&callback=' + cbName + '&t=' + Date.now();
+    document.head.appendChild(script);
+    setTimeout(() => { if (window[cbName]) { resolve([]); delete window[cbName]; script.remove(); } }, 10000);
+  });
+}
+
 /* ── 상담 신청 렌더 (Google 시트 우선, 없으면 localStorage) ── */
 async function renderInquiryList() {
   const container = document.getElementById('inquiryList');
   if (!container) return;
 
-  const gasUrl = (localStorage.getItem('dg_gas_url') || '').trim();
+  const gasUrl = (localStorage.getItem('dg_gas_url') || (window.DG_CONFIG && window.DG_CONFIG.gasUrl) || '').trim();
 
   /* Google 시트 연동 안내 박스 */
   const gasBox = document.getElementById('gasSetupBox');
@@ -181,11 +197,9 @@ async function renderInquiryList() {
 
   let all = [];
   if (gasUrl) {
-    /* Google 시트에서 가져오기 */
+    /* Google 시트에서 가져오기 (JSONP — CORS 우회) */
     try {
-      const resp = await fetch(gasUrl + '?t=' + Date.now());
-      const remote = await resp.json();
-      /* 구글시트 행 → 객체 변환 (헤더행 배열 or 객체 배열 둘 다 처리) */
+      const remote = await fetchFromGAS(gasUrl);
       all = remote.map((item, idx) => ({
         id:      item.id || (Date.now() - idx),
         status:  item['상태'] || '미확인',

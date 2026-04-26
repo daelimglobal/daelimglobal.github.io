@@ -370,28 +370,30 @@
                 <div id="gasCodeBlock" style="display:none;margin-top:10px;position:relative">
                   <button onclick="copyGasCode()" class="btn-sm btn-outline" style="position:absolute;top:8px;right:8px;z-index:1">복사</button>
                   <pre id="gasCode" style="background:#1e1e2e;color:#cdd6f4;padding:14px 14px 14px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.6;white-space:pre">const SHEET = '상담신청';
-function doPost(e){
-  try{
-    var ss=SpreadsheetApp.getActiveSpreadsheet();
-    var sh=ss.getSheetByName(SHEET)||ss.insertSheet(SHEET);
-    if(sh.getLastRow()===0)
+function doGet(e) {
+  var p = e.parameter;
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (p.action === 'write') {
+    var sh = ss.getSheetByName(SHEET) || ss.insertSheet(SHEET);
+    if (sh.getLastRow() === 0)
       sh.appendRow(['신청시각','성함','연락처','부지지역','희망평형','예상예산','문의내용','상태']);
-    var d=JSON.parse(e.postData.contents);
-    sh.appendRow([d['신청시각']||'',d['성함']||'',d['연락처']||'',
-                  d['부지지역']||'',d['희망평형']||'',d['예상예산']||'',
-                  d['문의내용']||'','미확인']);
-    return ContentService.createTextOutput('ok');
-  }catch(err){return ContentService.createTextOutput('error');}
-}
-function doGet(){
-  var sh=SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET);
-  if(!sh)return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
-  var rows=sh.getDataRange().getValues();
-  if(rows.length<=1)return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
-  var h=rows[0],data=rows.slice(1).reverse().map(function(r,i){
-    var o={id:Date.now()-i};h.forEach(function(k,j){o[k]=r[j];});return o;
-  });
-  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+    sh.appendRow([p['신청시각']||'',p['성함']||'',p['연락처']||'',
+                  p['부지지역']||'',p['희망평형']||'',p['예상예산']||'',
+                  p['문의내용']||'','미확인']);
+    var r = JSON.stringify({success:true});
+    return ContentService.createTextOutput(p.callback ? p.callback+'('+r+')' : r)
+      .setMimeType(p.callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  }
+  var sh = ss.getSheetByName(SHEET); var data = [];
+  if (sh && sh.getLastRow() > 1) {
+    var rows = sh.getDataRange().getValues(); var h = rows[0];
+    data = rows.slice(1).reverse().map(function(r,i){
+      var o = {id: Date.now()-i}; h.forEach(function(k,j){ o[k]=r[j]; }); return o;
+    });
+  }
+  var json = JSON.stringify(data);
+  return ContentService.createTextOutput(p.callback ? p.callback+'('+json+')' : json)
+    .setMimeType(p.callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
 }</pre>
                 </div>
               </div>

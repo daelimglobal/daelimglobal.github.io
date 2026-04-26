@@ -136,18 +136,23 @@ if (form) {
       } catch(err) { console.warn('이메일 전송 오류:', err); }
     }
 
-    /* 3. Google 시트 저장 (어느 기기에서 신청해도 관리자 패널에서 확인 가능) */
+    /* 3. Google 시트 저장 — Image 태그 방식 (CORS 완전 우회) */
     const gasUrl = ((window.DG_CONFIG && window.DG_CONFIG.gasUrl) ||
                     localStorage.getItem('dg_gas_url') || '').trim();
     if (gasUrl) {
       try {
-        fetch(gasUrl, {
-          method: 'POST',
-          mode:   'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(data)
+        const p = new URLSearchParams({
+          action:  'write',
+          신청시각: data.신청시각,
+          성함:    data.성함,
+          연락처:  data.연락처,
+          부지지역: data.부지지역,
+          희망평형: data.희망평형,
+          예상예산: data.예상예산,
+          문의내용: (data.문의내용 || '').slice(0, 500),
         });
-      } catch (err) { console.warn('Google 시트 저장 오류:', err); }
+        new Image().src = gasUrl + '?' + p.toString();
+      } catch (err) {}
     }
   });
 }
