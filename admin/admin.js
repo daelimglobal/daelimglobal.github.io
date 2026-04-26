@@ -362,34 +362,31 @@ function saveInquiries(list) {
   localStorage.setItem('dg_submissions', JSON.stringify(list));
 }
 
-/* GAS 데이터 읽기 — fetch 우선, 실패 시 JSONP 폴백 */
+/* GAS 데이터 읽기 — JSONP 우선 (CORS 우회), fetch 폴백 */
 async function fetchFromGAS(url) {
-  /* 1차: fetch */
-  try {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 5000);
-    const resp = await fetch(url + '?action=read&t=' + Date.now(), { signal: ac.signal });
-    clearTimeout(timer);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    return Array.isArray(data) ? data : [];
-  } catch (fetchErr) {
-    /* 2차 폴백: JSONP */
-    return new Promise((resolve, reject) => {
-      const cbName = 'dg_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-      const script = document.createElement('script');
-      window[cbName] = (data) => {
-        resolve(Array.isArray(data) ? data : []);
-        delete window[cbName]; script.remove();
-      };
-      script.onerror = () => { reject(new Error('jsonp failed')); delete window[cbName]; script.remove(); };
-      script.src = url + '?action=read&callback=' + cbName + '&t=' + Date.now();
-      document.head.appendChild(script);
-      setTimeout(() => {
-        if (window[cbName]) { reject(new Error('jsonp timeout')); delete window[cbName]; script.remove(); }
-      }, 10000);
-    });
-  }
+  /* JSONP 방식으로 직접 호출 (GAS CORS 문제 완전 우회) */
+  const cbName = 'dg_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  const jsonpPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    window[cbName] = (data) => {
+      resolve(Array.isArray(data) ? data : []);
+      delete window[cbName]; script.remove();
+    };
+    script.onerror = () => { reject(new Error('jsonp load error')); delete window[cbName]; script.remove(); };
+    script.src = url + '?action=read&callback=' + cbName + '&t=' + Date.now();
+    document.head.appendChild(script);
+    setTimeout(() => {
+      if (window[cbName]) { reject(new Error('jsonp timeout 25s')); delete window[cbName]; script.remove(); }
+    }, 25000);
+  });
+
+  /* fetch를 병렬로 실행해서 먼저 오는 쪽 사용 */
+  const fetchPromise = fetch(url + '?action=read&t=' + Date.now())
+    .then(r => r.ok ? r.json() : Promise.reject('http ' + r.status))
+    .then(d => Array.isArray(d) ? d : []);
+
+  /* 둘 중 먼저 성공하는 결과 사용 */
+  return Promise.any([jsonpPromise, fetchPromise]);
 }
 
 let _inqLoading = false;
