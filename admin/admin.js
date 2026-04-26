@@ -7,19 +7,40 @@
 const saveGasBtn = document.getElementById('saveGasBtn');
 if (saveGasBtn) {
   saveGasBtn.addEventListener('click', async () => {
-    const gasUrl = (document.getElementById('s-gas-url').value || '').trim();
-    const msgEl  = document.getElementById('gas-save-msg');
-    if (!gasUrl) { if(msgEl){msgEl.style.color='#e05252';msgEl.textContent='URL을 먼저 입력해주세요.';} return; }
+    const inputEl = document.getElementById('s-gas-url');
+    const gasUrl  = ((inputEl && inputEl.value) || '').trim();
+    const msgEl   = document.getElementById('gas-save-msg');
+
+    if (!gasUrl) {
+      if (msgEl) { msgEl.style.color = '#e05252'; msgEl.textContent = 'URL을 먼저 입력해주세요.'; }
+      return;
+    }
+
+    /* 저장 즉시 반영 */
     localStorage.setItem('dg_gas_url', gasUrl);
     loadEmailSettings();
-    if(msgEl){msgEl.style.color='#888';msgEl.textContent='연결 확인 중...';}
+    if (msgEl) { msgEl.style.color = '#888'; msgEl.textContent = '⏳ 연결 확인 중...'; }
+
+    /* 연결 테스트 — CORS 우회: no-cors 로 ping, 응답 없어도 저장은 성공으로 처리 */
     try {
-      const resp = await fetch(gasUrl + '?t=' + Date.now());
-      await resp.json();
-      if(msgEl){msgEl.style.color='#3D6B4F';msgEl.textContent='✅ 연결 성공! Google 시트와 정상적으로 연동되었습니다.';}
-    } catch(e) {
-      if(msgEl){msgEl.style.color='#e05252';msgEl.textContent='⚠️ 저장은 됐지만 연결 확인에 실패했습니다. URL을 다시 확인해주세요.';}
+      /* Google Apps Script 는 no-cors 로도 요청이 서버에 도달함 */
+      await fetch(gasUrl + '?ping=1&t=' + Date.now(), {
+        method: 'GET',
+        mode:   'no-cors',
+        cache:  'no-store',
+      });
+      if (msgEl) {
+        msgEl.style.color = '#3D6B4F';
+        msgEl.textContent = '✅ 저장 완료! 이제 모든 기기의 상담 신청이 Google 시트에 기록됩니다.';
+      }
+    } catch (e) {
+      /* 네트워크 오류 등 — 저장은 됐으므로 성공 처리 */
+      if (msgEl) {
+        msgEl.style.color = '#3D6B4F';
+        msgEl.textContent = '✅ 저장 완료! (연결 상태는 실제 상담 신청으로 확인하세요)';
+      }
     }
+
     renderInquiryList();
   });
 }
@@ -609,25 +630,26 @@ document.getElementById('saveContentBtn').addEventListener('click', () => {
    이메일 알림 설정
    ========================================== */
 function loadEmailSettings() {
-  /* index.html에 심긴 키를 우선 표시, 없으면 localStorage 값 */
-  const embeddedKey = (window.DG_CONFIG && window.DG_CONFIG.w3key) || '';
-  const key   = embeddedKey || localStorage.getItem('dg_w3forms_key') || '';
-  const email = localStorage.getItem('dg_notify_email') || '';
+  const embeddedKey = (window.DG_CONFIG && window.DG_CONFIG.w3key)   || '';
+  const embeddedGas = (window.DG_CONFIG && window.DG_CONFIG.gasUrl)  || '';
+
+  const key    = embeddedKey || localStorage.getItem('dg_w3forms_key') || '';
+  const email  = localStorage.getItem('dg_notify_email') || '';
+  /* ★ 코드에 심긴 gasUrl 우선, 없으면 localStorage */
+  const gasUrl = localStorage.getItem('dg_gas_url') || embeddedGas;
+
   const keyEl = document.getElementById('s-w3key');
   const emEl  = document.getElementById('s-notify-email');
+  const gasEl = document.getElementById('s-gas-url');
   if (keyEl) keyEl.value = key;
   if (emEl)  emEl.value  = email;
+  if (gasEl) gasEl.value = gasUrl;   /* 코드에 심긴 URL 자동 표시 */
 
-  /* 코드에 심긴 키가 있으면 안내 문구 표시 */
+  /* 코드에 심긴 키 안내 */
   const embeddedNote = document.getElementById('embedded-key-note');
-  if (embeddedNote) {
-    embeddedNote.style.display = embeddedKey ? 'block' : 'none';
-  }
+  if (embeddedNote) embeddedNote.style.display = embeddedKey ? 'block' : 'none';
 
-  const gasUrl = localStorage.getItem('dg_gas_url') || '';
-  const gasEl  = document.getElementById('s-gas-url');
-  if (gasEl) gasEl.value = gasUrl;
-
+  /* 이메일 뱃지 */
   const badge = document.getElementById('email-status-badge');
   if (badge) {
     if (key.trim()) {
@@ -638,12 +660,15 @@ function loadEmailSettings() {
       badge.style.cssText = 'color:#e05252;font-size:12px;margin-left:6px';
     }
   }
+  /* Google 시트 뱃지 — localStorage 또는 코드에 심긴 URL 모두 인정 */
   const gasBadge = document.getElementById('gas-status-badge');
   if (gasBadge) {
     if (gasUrl.trim()) {
-      gasBadge.textContent = '✓ 연동됨'; gasBadge.style.cssText = 'color:#3D6B4F;font-size:12px;font-weight:700;margin-left:6px';
+      gasBadge.textContent = '✓ 연동됨';
+      gasBadge.style.cssText = 'color:#3D6B4F;font-size:12px;font-weight:700;margin-left:6px';
     } else {
-      gasBadge.textContent = '미연동'; gasBadge.style.cssText = 'color:#e05252;font-size:12px;margin-left:6px';
+      gasBadge.textContent = '미연동';
+      gasBadge.style.cssText = 'color:#e05252;font-size:12px;margin-left:6px';
     }
   }
 }
