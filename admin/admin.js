@@ -114,7 +114,7 @@ function initAdmin() {
   renderPortfolioList();
   renderSocialList();
   renderVideoList();
-  renderInquiryList();
+  /* renderInquiryList는 탭 클릭 시 호출 — 동시 호출 충돌 방지 */
   loadSettings();
   loadEmailSettings();
   loadContentEditor();
@@ -162,24 +162,31 @@ function saveInquiries(list) {
 
 /* JSONP helper — CORS-free read from Google Apps Script */
 function fetchFromGAS(url) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const cbName = 'dg_cb_' + Date.now();
     const script = document.createElement('script');
     window[cbName] = (data) => {
       resolve(Array.isArray(data) ? data : []);
       delete window[cbName]; script.remove();
     };
-    script.onerror = () => { resolve([]); delete window[cbName]; script.remove(); };
+    script.onerror = () => { reject(new Error('script load failed')); delete window[cbName]; script.remove(); };
     script.src = url + '?action=read&callback=' + cbName + '&t=' + Date.now();
     document.head.appendChild(script);
-    setTimeout(() => { if (window[cbName]) { resolve([]); delete window[cbName]; script.remove(); } }, 10000);
+    setTimeout(() => {
+      if (window[cbName]) { reject(new Error('timeout')); delete window[cbName]; script.remove(); }
+    }, 20000);
   });
 }
 
+let _inqLoading = false;
+
 /* ── 상담 신청 렌더 (Google 시트 우선, 없으면 localStorage) ── */
 async function renderInquiryList() {
+  if (_inqLoading) return;
+  _inqLoading = true;
+
   const container = document.getElementById('inquiryList');
-  if (!container) return;
+  if (!container) { _inqLoading = false; return; }
 
   const gasUrl = (localStorage.getItem('dg_gas_url') || (window.DG_CONFIG && window.DG_CONFIG.gasUrl) || '').trim();
 
@@ -202,18 +209,22 @@ async function renderInquiryList() {
       const remote = await fetchFromGAS(gasUrl);
       all = remote.map((item, idx) => ({
         id:      item.id || (Date.now() - idx),
-        status:  item['상태'] || '미확인',
-        신청시각: item['신청시각'] || '',
-        성함:    item['성함']    || '',
-        연락처:  item['연락처']  || '',
-        부지지역: item['부지지역'] || '',
-        희망평형: item['희망평형'] || '',
-        예상예산: item['예상예산'] || '',
-        문의내용: item['문의내용'] || '',
+        status:  String(item['상태'] || '미확인'),
+        신청시각: String(item['신청시각'] || ''),
+        성함:    String(item['성함']    || ''),
+        연락처:  String(item['연락처']  || ''),
+        부지지역: String(item['부지지역'] || ''),
+        희망평형: String(item['희망평형'] || ''),
+        예상예산: String(item['예상예산'] || ''),
+        문의내용: String(item['문의내용'] || ''),
       }));
     } catch (err) {
       console.warn('Google 시트 조회 실패:', err);
-      container.innerHTML = '<div class="inq-empty" style="color:#e05252">⚠️ Google 시트 연결에 실패했습니다. URL을 확인해주세요.</div>';
+      container.innerHTML = `<div class="inq-empty" style="color:#e05252">
+        ⚠️ Google 시트에서 데이터를 불러오지 못했습니다.<br>
+        <button class="btn-sm btn-outline" style="margin-top:10px" onclick="_inqLoading=false;renderInquiryList()">🔄 다시 시도</button>
+      </div>`;
+      _inqLoading = false;
       return;
     }
   } else {
@@ -241,46 +252,56 @@ async function renderInquiryList() {
   if (!list.length) {
     container.innerHTML = `<div class="inq-empty">${all.length === 0 ? '📭 아직 상담 신청이 없습니다.' : '해당 조건의 신청이 없습니다.'}</div>`;
     updateInquiryBadge(newCount);
+    _inqLoading = false;
     return;
   }
 
-  container.innerHTML = list.map(item => {
-    const statusClass = item.status === '미확인' ? 'status-new' : item.status === '처리완료' ? 'status-done' : 'status-read';
-    const safeKey = encodeURIComponent(item.신청시각 + '|' + item.성함);
-    return `
-    <div class="inq-card ${item.status === '미확인' ? 'inq-card-new' : ''}">
-      <div class="inq-card-header">
-        <span class="inq-status ${statusClass}">${item.status}</span>
-        <div class="inq-name-phone">
-          <strong>${item.성함 || '(이름 없음)'}</strong>
-          <a href="tel:${(item.연락처||'').replace(/[^0-9]/g,'')}" class="inq-phone">📞 ${item.연락처 || '-'}</a>
+  try {
+    container.innerHTML = list.map(item => {
+      const statusClass = item.status === '미확인' ? 'status-new' : item.status === '처리완료' ? 'status-done' : 'status-read';
+      const safeKey = encodeURIComponent(item.신청시각 + '|' + item.성함);
+      return `
+      <div class="inq-card ${item.status === '미확인' ? 'inq-card-new' : ''}">
+        <div class="inq-card-header">
+          <span class="inq-status ${statusClass}">${item.status}</span>
+          <div class="inq-name-phone">
+            <strong>${item.성함 || '(이름 없음)'}</strong>
+            <a href="tel:${item.연락처.replace(/[^0-9]/g,'')}" class="inq-phone">📞 ${item.연락처 || '-'}</a>
+          </div>
+          <div class="inq-meta">
+            <span>${item.신청시각}</span>
+            ${item.희망평형 ? `<span class="inq-tag">${item.희망평형}</span>` : ''}
+            ${item.예상예산 ? `<span class="inq-tag">${item.예상예산}</span>` : ''}
+          </div>
+          <div class="inq-card-actions">
+            <button class="btn-sm btn-outline" onclick="this.closest('.inq-card').querySelector('.inq-detail').style.display = this.closest('.inq-card').querySelector('.inq-detail').style.display==='none'?'block':'none'">상세보기</button>
+            <select class="inq-status-sel" onchange="saveInqStatus('${safeKey}', this.value, this.closest('.inq-card'))">
+              <option ${item.status==='미확인'?'selected':''}>미확인</option>
+              <option ${item.status==='확인완료'?'selected':''}>확인완료</option>
+              <option ${item.status==='처리완료'?'selected':''}>처리완료</option>
+            </select>
+          </div>
         </div>
-        <div class="inq-meta">
-          <span>${item.신청시각 || ''}</span>
-          ${item.희망평형 ? `<span class="inq-tag">${item.희망평형}</span>` : ''}
-          ${item.예상예산 ? `<span class="inq-tag">${item.예상예산}</span>` : ''}
+        <div class="inq-detail" style="display:none">
+          <div class="inq-detail-grid">
+            <div><label>부지 지역</label><span>${item.부지지역 || '-'}</span></div>
+            <div><label>희망 평형</label><span>${item.희망평형 || '-'}</span></div>
+            <div><label>예상 예산</label><span>${item.예상예산 || '-'}</span></div>
+            <div><label>신청 시각</label><span>${item.신청시각 || '-'}</span></div>
+          </div>
+          ${item.문의내용 ? `<div class="inq-message"><label>문의 내용</label><p>${item.문의내용}</p></div>` : ''}
         </div>
-        <div class="inq-card-actions">
-          <button class="btn-sm btn-outline" onclick="this.closest('.inq-card').querySelector('.inq-detail').style.display = this.closest('.inq-card').querySelector('.inq-detail').style.display==='none'?'block':'none'">상세보기</button>
-          <select class="inq-status-sel" onchange="saveInqStatus('${safeKey}', this.value, this.closest('.inq-card'))">
-            <option ${item.status==='미확인'?'selected':''}>미확인</option>
-            <option ${item.status==='확인완료'?'selected':''}>확인완료</option>
-            <option ${item.status==='처리완료'?'selected':''}>처리완료</option>
-          </select>
-        </div>
-      </div>
-      <div class="inq-detail" style="display:none">
-        <div class="inq-detail-grid">
-          <div><label>부지 지역</label><span>${item.부지지역 || '-'}</span></div>
-          <div><label>희망 평형</label><span>${item.희망평형 || '-'}</span></div>
-          <div><label>예상 예산</label><span>${item.예상예산 || '-'}</span></div>
-          <div><label>신청 시각</label><span>${item.신청시각 || '-'}</span></div>
-        </div>
-        ${item.문의내용 ? `<div class="inq-message"><label>문의 내용</label><p>${item.문의내용}</p></div>` : ''}
-      </div>
+      </div>`;
+    }).join('');
+  } catch(renderErr) {
+    console.error('렌더 오류:', renderErr);
+    container.innerHTML = `<div class="inq-empty" style="color:#e05252">
+      ⚠️ 데이터 표시 중 오류가 발생했습니다.<br>
+      <button class="btn-sm btn-outline" style="margin-top:10px" onclick="_inqLoading=false;renderInquiryList()">🔄 다시 시도</button>
     </div>`;
-  }).join('');
+  }
   updateInquiryBadge(newCount);
+  _inqLoading = false;
 }
 
 window.saveInqStatus = function(safeKey, status, card) {
