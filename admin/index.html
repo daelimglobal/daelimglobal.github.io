@@ -403,6 +403,8 @@ function doGet(){
             <input type="url" id="s-gas-url" placeholder="https://script.google.com/macros/s/.../exec">
           </div>
           <p style="font-size:12px;color:#888;margin-top:4px">설정 저장 후 고객이 상담 신청하면 Google 스프레드시트에 자동으로 기록되고, 이 패널에서도 바로 확인할 수 있습니다.</p>
+          <button class="btn-primary" id="saveGasBtn" style="margin-top:12px">📊 Google 시트 연동 저장</button>
+          <div id="gas-save-msg" style="font-size:13px;min-height:20px;margin-top:8px"></div>
         </div>
 
         <div class="settings-block full email-settings-block">

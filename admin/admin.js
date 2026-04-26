@@ -3,6 +3,27 @@
    기본 비밀번호: daelim2024
    ================================================ */
 
+/* Google 시트 저장 버튼 */
+const saveGasBtn = document.getElementById('saveGasBtn');
+if (saveGasBtn) {
+  saveGasBtn.addEventListener('click', async () => {
+    const gasUrl = (document.getElementById('s-gas-url').value || '').trim();
+    const msgEl  = document.getElementById('gas-save-msg');
+    if (!gasUrl) { if(msgEl){msgEl.style.color='#e05252';msgEl.textContent='URL을 먼저 입력해주세요.';} return; }
+    localStorage.setItem('dg_gas_url', gasUrl);
+    loadEmailSettings();
+    if(msgEl){msgEl.style.color='#888';msgEl.textContent='연결 확인 중...';}
+    try {
+      const resp = await fetch(gasUrl + '?t=' + Date.now());
+      await resp.json();
+      if(msgEl){msgEl.style.color='#3D6B4F';msgEl.textContent='✅ 연결 성공! Google 시트와 정상적으로 연동되었습니다.';}
+    } catch(e) {
+      if(msgEl){msgEl.style.color='#e05252';msgEl.textContent='⚠️ 저장은 됐지만 연결 확인에 실패했습니다. URL을 다시 확인해주세요.';}
+    }
+    renderInquiryList();
+  });
+}
+
 window.copyGasCode = function() {
   const code = document.getElementById('gasCode');
   if (!code) return;
