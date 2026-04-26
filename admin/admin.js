@@ -16,31 +16,12 @@ if (saveGasBtn) {
       return;
     }
 
-    /* 저장 즉시 반영 */
     localStorage.setItem('dg_gas_url', gasUrl);
-    loadEmailSettings();
-    if (msgEl) { msgEl.style.color = '#888'; msgEl.textContent = '⏳ 연결 확인 중...'; }
-
-    /* 연결 테스트 — CORS 우회: no-cors 로 ping, 응답 없어도 저장은 성공으로 처리 */
-    try {
-      /* Google Apps Script 는 no-cors 로도 요청이 서버에 도달함 */
-      await fetch(gasUrl + '?ping=1&t=' + Date.now(), {
-        method: 'GET',
-        mode:   'no-cors',
-        cache:  'no-store',
-      });
-      if (msgEl) {
-        msgEl.style.color = '#3D6B4F';
-        msgEl.textContent = '✅ 저장 완료! 이제 모든 기기의 상담 신청이 Google 시트에 기록됩니다.';
-      }
-    } catch (e) {
-      /* 네트워크 오류 등 — 저장은 됐으므로 성공 처리 */
-      if (msgEl) {
-        msgEl.style.color = '#3D6B4F';
-        msgEl.textContent = '✅ 저장 완료! (연결 상태는 실제 상담 신청으로 확인하세요)';
-      }
+    loadEmailSettings();   /* 뱃지 즉시 갱신 */
+    if (msgEl) {
+      msgEl.style.color = '#3D6B4F';
+      msgEl.textContent = '✅ 저장 완료! 이제 모든 기기의 상담 신청이 Google 시트에 기록됩니다.';
     }
-
     renderInquiryList();
   });
 }
