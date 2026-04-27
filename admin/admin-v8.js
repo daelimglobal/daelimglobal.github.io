@@ -474,12 +474,15 @@ function _normalizeGasData(remote) {
   }));
 }
 
-/* GAS 데이터와 localStorage 데이터 병합 (신청시각+성함으로 중복 제거) */
+/* GAS 데이터와 localStorage 데이터 병합 (신청시각+성함으로 중복 제거, 삭제 항목 제외) */
 function _mergeWithLocal(gasData) {
-  const local = getInquiries();
-  const seen = new Set(gasData.map(i => i.신청시각 + i.성함));
+  const deleted = new Set(JSON.parse(localStorage.getItem('dg_inq_deleted') || '[]'));
+  const isDeleted = i => deleted.has(i.신청시각 + '|' + i.성함);
+  const local = getInquiries().filter(i => !isDeleted(i));
+  const filtered = gasData.filter(i => !isDeleted(i));
+  const seen = new Set(filtered.map(i => i.신청시각 + i.성함));
   const onlyLocal = local.filter(i => !seen.has(i.신청시각 + i.성함));
-  return [...onlyLocal, ...gasData].sort((a, b) => {
+  return [...onlyLocal, ...filtered].sort((a, b) => {
     return new Date(b.신청시각) - new Date(a.신청시각) || b.id - a.id;
   });
 }
@@ -514,8 +517,9 @@ function _renderInquiryRows(all, container, prependHtml) {
       const safeKey = encodeURIComponent(item.신청시각 + '|' + item.성함);
       const phone = (item.연락처 || '').replace(/[^0-9]/g,'');
       return `
-      <div class="inq-card ${item.status === '미확인' ? 'inq-card-new' : ''}">
+      <div class="inq-card ${item.status === '미확인' ? 'inq-card-new' : ''}" data-key="${encodeURIComponent(item.신청시각 + '|' + item.성함)}">
         <div class="inq-card-header">
+          <input type="checkbox" class="inq-chk" style="width:16px;height:16px;cursor:pointer;flex-shrink:0" onchange="updateSelectedCount()">
           <span class="inq-status ${statusClass}">${item.status}</span>
           <div class="inq-name-phone">
             <strong>${item.성함 || '(이름 없음)'}</strong>
@@ -556,6 +560,48 @@ function _renderInquiryRows(all, container, prependHtml) {
   }
   updateInquiryBadge(newCount);
 }
+
+/* 선택 카운트 업데이트 */
+window.updateSelectedCount = function() {
+  const checked = document.querySelectorAll('#inquiryList .inq-chk:checked');
+  const all     = document.querySelectorAll('#inquiryList .inq-chk');
+  const countEl = document.getElementById('selectedCount');
+  const btn     = document.getElementById('deleteSelectedBtn');
+  const selAll  = document.getElementById('inqSelectAll');
+  if (countEl) countEl.textContent = checked.length;
+  if (btn)     btn.style.display   = checked.length > 0 ? 'inline-flex' : 'none';
+  if (selAll)  selAll.indeterminate = checked.length > 0 && checked.length < all.length;
+  if (selAll)  selAll.checked       = all.length > 0 && checked.length === all.length;
+};
+
+/* 선택 항목 삭제 */
+window.deleteSelectedInquiries = function() {
+  const checked = document.querySelectorAll('#inquiryList .inq-chk:checked');
+  if (!checked.length) return;
+  if (!confirm(`선택한 ${checked.length}건을 삭제하시겠습니까?`)) return;
+
+  const keysToDelete = new Set();
+  checked.forEach(chk => {
+    const card = chk.closest('.inq-card');
+    if (card) keysToDelete.add(decodeURIComponent(card.dataset.key));
+  });
+
+  /* localStorage에서 삭제 */
+  const list = getInquiries().filter(i => !keysToDelete.has(i.신청시각 + '|' + i.성함));
+  saveInquiries(list);
+
+  /* GAS 재조회 시 재등장 방지용 삭제 목록 저장 */
+  const deleted = new Set(JSON.parse(localStorage.getItem('dg_inq_deleted') || '[]'));
+  keysToDelete.forEach(k => deleted.add(k));
+  localStorage.setItem('dg_inq_deleted', JSON.stringify([...deleted]));
+
+  /* _gasCache에서도 제거 */
+  if (_gasCache) _gasCache = _gasCache.filter(i => !keysToDelete.has(i.신청시각 + '|' + i.성함));
+
+  _inqLoading = false;
+  renderInquiryList();
+  showSaved('선택 항목이 삭제되었습니다.');
+};
 
 window.saveInqStatus = function(safeKey, status, card) {
   const key = decodeURIComponent(safeKey);
@@ -615,9 +661,24 @@ if (clearInqBtn) {
   clearInqBtn.addEventListener('click', () => {
     if (!confirm('상담 신청 내역을 전체 삭제할까요? 복구할 수 없습니다.')) return;
     localStorage.removeItem('dg_submissions');
+    _gasCache = null;
     renderInquiryList();
     updateDashboard();
     showSaved('전체 삭제되었습니다.');
+  });
+}
+
+const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+if (deleteSelectedBtn) {
+  deleteSelectedBtn.addEventListener('click', () => deleteSelectedInquiries());
+}
+
+const inqSelectAll = document.getElementById('inqSelectAll');
+if (inqSelectAll) {
+  inqSelectAll.addEventListener('change', () => {
+    const chks = document.querySelectorAll('#inquiryList .inq-chk');
+    chks.forEach(c => { c.checked = inqSelectAll.checked; });
+    updateSelectedCount();
   });
 }
 

@@ -162,10 +162,15 @@
 
       <div class="inq-toolbar">
         <div class="inq-summary">
-          전체 <strong id="inqTotal">0</strong>건
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:500">
+            <input type="checkbox" id="inqSelectAll" style="width:16px;height:16px;cursor:pointer">
+            전체 선택
+          </label>
+          &nbsp;&nbsp;전체 <strong id="inqTotal">0</strong>건
           &nbsp;·&nbsp; 미확인 <strong id="inqNew" style="color:#e05252">0</strong>건
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-outline btn-sm btn-del-text" id="deleteSelectedBtn" style="display:none">선택 삭제 (<span id="selectedCount">0</span>)</button>
           <select id="inqFilter" class="inq-filter">
             <option value="all">전체 보기</option>
             <option value="미확인">미확인만</option>
