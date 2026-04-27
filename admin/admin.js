@@ -483,7 +483,6 @@ function _mergeWithLocal(gasData) {
     return new Date(b.신청시각) - new Date(a.신청시각) || b.id - a.id;
   });
 }
-}
 
 /* 내역 카드 렌더 (재사용) */
 function _renderInquiryRows(all, container, prependHtml) {
