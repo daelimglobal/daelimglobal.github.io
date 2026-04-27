@@ -413,13 +413,13 @@ async function renderInquiryList() {
 
   /* 캐시가 있으면 즉시 표시, 없으면 로딩 표시 */
   if (_gasCache) {
-    _renderInquiryRows(_gasCache, container);
+    _renderInquiryRows(_mergeWithLocal(_gasCache), container);
     _inqLoading = false;
     /* 백그라운드에서 갱신 시도 (비차단) */
     if (gasUrl) {
       fetchFromGAS(gasUrl).then(remote => {
         _gasCache = _normalizeGasData(remote);
-        _renderInquiryRows(_gasCache, container);
+        _renderInquiryRows(_mergeWithLocal(_gasCache), container);
       }).catch(() => {});
     }
     return;
@@ -431,12 +431,11 @@ async function renderInquiryList() {
   if (gasUrl) {
     try {
       const remote = await fetchFromGAS(gasUrl);
-      all = _normalizeGasData(remote);
-      _gasCache = all;
+      _gasCache = _normalizeGasData(remote);
+      all = _mergeWithLocal(_gasCache);
     } catch (err) {
       console.warn('Google 시트 조회 실패:', err);
-      /* 캐시나 localStorage로 fallback */
-      all = _gasCache || getInquiries();
+      all = _gasCache ? _mergeWithLocal(_gasCache) : getInquiries();
       const warn = all.length
         ? `<div style="background:#fff3cd;border:1px solid #ffc107;padding:8px 14px;border-radius:6px;font-size:12px;color:#856404;margin-bottom:12px">
             ⚠️ Google 시트 연결 실패 — 마지막 데이터를 표시합니다.
@@ -448,7 +447,6 @@ async function renderInquiryList() {
         <button class="btn-sm btn-outline" style="margin-top:10px" onclick="_inqLoading=false;renderInquiryList()">🔄 다시 시도</button>
       </div>`;
       if (!all.length) { _inqLoading = false; return; }
-      /* all이 있으면 경고 아래 카드 렌더 */
       _inqLoading = false;
       _renderInquiryRows(all, container, warn);
       return;
@@ -474,6 +472,17 @@ function _normalizeGasData(remote) {
     예상예산: String(item['예상예산'] || ''),
     문의내용: String(item['문의내용'] || ''),
   }));
+}
+
+/* GAS 데이터와 localStorage 데이터 병합 (신청시각+성함으로 중복 제거) */
+function _mergeWithLocal(gasData) {
+  const local = getInquiries();
+  const seen = new Set(gasData.map(i => i.신청시각 + i.성함));
+  const onlyLocal = local.filter(i => !seen.has(i.신청시각 + i.성함));
+  return [...onlyLocal, ...gasData].sort((a, b) => {
+    return new Date(b.신청시각) - new Date(a.신청시각) || b.id - a.id;
+  });
+}
 }
 
 /* 내역 카드 렌더 (재사용) */
@@ -592,14 +601,11 @@ if (markAllReadBtn) {
   markAllReadBtn.addEventListener('click', () => {
     /* localStorage 상태 맵 전체를 확인완료로 업데이트 */
     const map = JSON.parse(localStorage.getItem('dg_inq_status') || '{}');
-    if (_gasCache) {
-      _gasCache.forEach(item => { map[item.신청시각 + item.성함] = '확인완료'; });
-    } else {
-      getInquiries().forEach(i => { map[i.신청시각 + i.성함] = '확인완료'; });
-    }
+    const merged = _gasCache ? _mergeWithLocal(_gasCache) : getInquiries();
+    merged.forEach(item => { map[item.신청시각 + item.성함] = '확인완료'; });
     localStorage.setItem('dg_inq_status', JSON.stringify(map));
     const container = document.getElementById('inquiryList');
-    if (container) _renderInquiryRows(_gasCache || getInquiries(), container);
+    if (container) _renderInquiryRows(merged, container);
     updateDashboard();
     showSaved('전체 읽음 표시 완료');
   });
