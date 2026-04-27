@@ -138,12 +138,24 @@ if (form) {
       } catch(err) { console.warn('이메일 전송 오류:', err); }
     }
 
-    /* 3. Google 시트 저장 — no-cors fetch (CORS 우회, 리다이렉트 대응) */
+    /* 3. Google 시트 저장 — 숨김 iframe+form 방식 (CORS·리다이렉트 완전 우회) */
     const gasUrl = ((window.DG_CONFIG && window.DG_CONFIG.gasUrl) ||
                     localStorage.getItem('dg_gas_url') || '').trim();
     if (gasUrl) {
       try {
-        const p = new URLSearchParams({
+        const iframeName = 'gas_sink_' + Date.now();
+        const iframe = document.createElement('iframe');
+        iframe.name = iframeName;
+        iframe.style.cssText = 'display:none;position:absolute;width:0;height:0;border:0';
+        document.body.appendChild(iframe);
+
+        const gform = document.createElement('form');
+        gform.method = 'GET';
+        gform.action = gasUrl;
+        gform.target = iframeName;
+        gform.style.display = 'none';
+
+        const fields = {
           action:  'write',
           신청시각: data.신청시각,
           성함:    data.성함,
@@ -152,8 +164,16 @@ if (form) {
           희망평형: data.희망평형,
           예상예산: data.예상예산,
           문의내용: (data.문의내용 || '').slice(0, 500),
+        };
+        Object.entries(fields).forEach(([k, v]) => {
+          const inp = document.createElement('input');
+          inp.type = 'hidden'; inp.name = k; inp.value = v;
+          gform.appendChild(inp);
         });
-        fetch(gasUrl + '?' + p.toString(), { mode: 'no-cors' }).catch(() => {});
+
+        document.body.appendChild(gform);
+        gform.submit();
+        setTimeout(() => { gform.remove(); iframe.remove(); }, 8000);
       } catch(err) {}
     }
 
