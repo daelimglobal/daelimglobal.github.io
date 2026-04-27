@@ -138,11 +138,11 @@ if (form) {
       } catch(err) { console.warn('이메일 전송 오류:', err); }
     }
 
-    /* 3. Google 시트 저장 — JSONP + fetch no-cors 동시 전송 (PC/모바일 모두 대응) */
+    /* 3. Google 시트 저장 — 3가지 방법 동시 시도 */
     const gasUrl = ((window.DG_CONFIG && window.DG_CONFIG.gasUrl) ||
                     localStorage.getItem('dg_gas_url') || '').trim();
     if (gasUrl) {
-      const p = new URLSearchParams({
+      const fields = {
         action:   'write',
         신청시각: data.신청시각,
         성함:    data.성함,
@@ -151,14 +151,15 @@ if (form) {
         희망평형: data.희망평형,
         예상예산: data.예상예산,
         문의내용: (data.문의내용 || '').slice(0, 500),
-      });
+      };
+      const p = new URLSearchParams(fields);
       const fullUrl = gasUrl + '?' + p.toString();
 
-      /* 방법 1: JSONP — 데스크탑에서 안정적 */
+      /* 방법 1: JSONP (데스크탑 Chrome 최적) */
       try {
         const cbName = 'dg_w_' + Date.now();
         const sc = document.createElement('script');
-        const pJ = new URLSearchParams(p);
+        const pJ = new URLSearchParams(fields);
         pJ.set('callback', cbName);
         window[cbName] = () => { delete window[cbName]; sc.remove(); };
         sc.onerror = () => { delete window[cbName]; sc.remove(); };
@@ -167,8 +168,29 @@ if (form) {
         setTimeout(() => { if (window[cbName]) { delete window[cbName]; sc.remove(); } }, 15000);
       } catch(e) {}
 
-      /* 방법 2: fetch no-cors — 모바일 Safari 등 JSONP 차단 환경 대응 */
+      /* 방법 2: fetch no-cors GET */
       try { fetch(fullUrl, { mode: 'no-cors' }).catch(() => {}); } catch(e) {}
+
+      /* 방법 3: 숨김 iframe + form 제출 (모바일 가장 호환성 높음) */
+      try {
+        const ifr = document.createElement('iframe');
+        ifr.name = 'dg_ifr_' + Date.now();
+        ifr.style.cssText = 'display:none;position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
+        document.body.appendChild(ifr);
+        const frm = document.createElement('form');
+        frm.method = 'GET';
+        frm.action = gasUrl;
+        frm.target = ifr.name;
+        frm.style.display = 'none';
+        Object.entries(fields).forEach(([k, v]) => {
+          const inp = document.createElement('input');
+          inp.type = 'hidden'; inp.name = k; inp.value = String(v);
+          frm.appendChild(inp);
+        });
+        document.body.appendChild(frm);
+        frm.submit();
+        setTimeout(() => { try { frm.remove(); ifr.remove(); } catch(e) {} }, 10000);
+      } catch(e) {}
     }
 
     /* 4. 완료 처리 — 폼 숨기고 완료 메시지 표시 */
