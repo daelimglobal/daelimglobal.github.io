@@ -110,16 +110,17 @@ if (form) {
       localStorage.setItem('dg_submissions', JSON.stringify(list));
     } catch(err) {}
 
-    /* 2. 이메일 알림 전송 (Web3Forms)
-          - window.DG_CONFIG.w3key : index.html에 직접 심긴 키 (PC·모바일 모두 작동)
-          - localStorage 값은 하위 호환용 fallback                              */
+    /* 2. 이메일 알림 전송 (Web3Forms) — 8초 타임아웃 */
     const w3Key = (window.DG_CONFIG && window.DG_CONFIG.w3key)
                   || (localStorage.getItem('dg_w3forms_key') || '').trim();
     if (w3Key) {
       try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 8000);
         await fetch('https://api.web3forms.com/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          signal: ctrl.signal,
           body: JSON.stringify({
             access_key: w3Key,
             subject:    `[대림글로벌] 건축상담 신청 — ${data.성함} (${data.연락처})`,
@@ -133,10 +134,11 @@ if (form) {
             '신청시각':  data.신청시각,
           })
         });
+        clearTimeout(tid);
       } catch(err) { console.warn('이메일 전송 오류:', err); }
     }
 
-    /* 3. Google 시트 저장 — Image 태그 방식 (CORS 완전 우회) */
+    /* 3. Google 시트 저장 — no-cors fetch (CORS 우회, 리다이렉트 대응) */
     const gasUrl = ((window.DG_CONFIG && window.DG_CONFIG.gasUrl) ||
                     localStorage.getItem('dg_gas_url') || '').trim();
     if (gasUrl) {
@@ -151,9 +153,13 @@ if (form) {
           예상예산: data.예상예산,
           문의내용: (data.문의내용 || '').slice(0, 500),
         });
-        new Image().src = gasUrl + '?' + p.toString();
-      } catch (err) {}
+        fetch(gasUrl + '?' + p.toString(), { mode: 'no-cors' }).catch(() => {});
+      } catch(err) {}
     }
+
+    /* 4. 완료 처리 — 폼 숨기고 완료 메시지 표시 */
+    form.style.display = 'none';
+    if (formDone) formDone.style.display = 'block';
   });
 }
 
