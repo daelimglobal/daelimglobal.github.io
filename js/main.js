@@ -143,18 +143,13 @@ if (form) {
                     localStorage.getItem('dg_gas_url') || '').trim();
     if (gasUrl) {
       try {
-        const p = new URLSearchParams({
-          action:  'write',
-          신청시각: data.신청시각,
-          성함:    data.성함,
-          연락처:  data.연락처,
-          부지지역: data.부지지역,
-          희망평형: data.희망평형,
-          예상예산: data.예상예산,
-          문의내용: (data.문의내용 || '').slice(0, 500),
+        fetch(gasUrl, {
+          method: 'POST',
+          mode:   'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(data)
         });
-        new Image().src = gasUrl + '?' + p.toString();
-      } catch(err) {}
+      } catch(err) { console.warn('Google 시트 저장 오류:', err); }
     }
 
     /* 4. 완료 처리 — 폼 숨기고 완료 메시지 표시 */
