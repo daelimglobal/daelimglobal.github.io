@@ -138,30 +138,37 @@ if (form) {
       } catch(err) { console.warn('이메일 전송 오류:', err); }
     }
 
-    /* 3. Google 시트 저장 — JSONP GET (doGet action=write와 일치) */
+    /* 3. Google 시트 저장 — JSONP + fetch no-cors 동시 전송 (PC/모바일 모두 대응) */
     const gasUrl = ((window.DG_CONFIG && window.DG_CONFIG.gasUrl) ||
                     localStorage.getItem('dg_gas_url') || '').trim();
     if (gasUrl) {
+      const p = new URLSearchParams({
+        action:   'write',
+        신청시각: data.신청시각,
+        성함:    data.성함,
+        연락처:  data.연락처,
+        부지지역: data.부지지역,
+        희망평형: data.희망평형,
+        예상예산: data.예상예산,
+        문의내용: (data.문의내용 || '').slice(0, 500),
+      });
+      const fullUrl = gasUrl + '?' + p.toString();
+
+      /* 방법 1: JSONP — 데스크탑에서 안정적 */
       try {
         const cbName = 'dg_w_' + Date.now();
         const sc = document.createElement('script');
-        const p = new URLSearchParams({
-          action:   'write',
-          callback:  cbName,
-          신청시각: data.신청시각,
-          성함:    data.성함,
-          연락처:  data.연락처,
-          부지지역: data.부지지역,
-          희망평형: data.희망평형,
-          예상예산: data.예상예산,
-          문의내용: (data.문의내용 || '').slice(0, 500),
-        });
+        const pJ = new URLSearchParams(p);
+        pJ.set('callback', cbName);
         window[cbName] = () => { delete window[cbName]; sc.remove(); };
         sc.onerror = () => { delete window[cbName]; sc.remove(); };
-        sc.src = gasUrl + '?' + p.toString();
+        sc.src = gasUrl + '?' + pJ.toString();
         document.head.appendChild(sc);
         setTimeout(() => { if (window[cbName]) { delete window[cbName]; sc.remove(); } }, 15000);
-      } catch(err) { console.warn('Google 시트 저장 오류:', err); }
+      } catch(e) {}
+
+      /* 방법 2: fetch no-cors — 모바일 Safari 등 JSONP 차단 환경 대응 */
+      try { fetch(fullUrl, { mode: 'no-cors' }).catch(() => {}); } catch(e) {}
     }
 
     /* 4. 완료 처리 — 폼 숨기고 완료 메시지 표시 */
