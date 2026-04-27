@@ -138,16 +138,13 @@ if (form) {
       } catch(err) { console.warn('이메일 전송 오류:', err); }
     }
 
-    /* 3. Google 시트 저장 — JSONP 방식 (admin 조회와 동일, CORS 완전 우회) */
+    /* 3. Google 시트 저장 */
     const gasUrl = ((window.DG_CONFIG && window.DG_CONFIG.gasUrl) ||
                     localStorage.getItem('dg_gas_url') || '').trim();
     if (gasUrl) {
       try {
-        const cbName = 'dg_w_' + Date.now();
-        const script = document.createElement('script');
         const p = new URLSearchParams({
-          action:   'write',
-          callback:  cbName,
+          action:  'write',
           신청시각: data.신청시각,
           성함:    data.성함,
           연락처:  data.연락처,
@@ -156,11 +153,7 @@ if (form) {
           예상예산: data.예상예산,
           문의내용: (data.문의내용 || '').slice(0, 500),
         });
-        window[cbName] = () => { delete window[cbName]; script.remove(); };
-        script.onerror  = () => { delete window[cbName]; script.remove(); };
-        script.src = gasUrl + '?' + p.toString();
-        document.head.appendChild(script);
-        setTimeout(() => { if (window[cbName]) { delete window[cbName]; script.remove(); } }, 12000);
+        new Image().src = gasUrl + '?' + p.toString();
       } catch(err) {}
     }
 
