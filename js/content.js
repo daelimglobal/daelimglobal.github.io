@@ -29,7 +29,8 @@ let _content = null;
 async function loadContent() {
   /* 1순위: content.json (GitHub에서 서빙 — 모든 기기 동일) */
   try {
-    const resp = await fetch('./content.json', { cache: 'no-store' });
+    const jsonUrl = new URL('content.json', location.href).href;
+    const resp = await fetch(jsonUrl, { cache: 'no-store' });
     if (resp.ok) {
       _content = await resp.json();
       return;
