@@ -294,7 +294,8 @@ document.querySelectorAll('.sb-item').forEach(btn => {
     const tab = btn.dataset.tab;
     document.getElementById('tab-' + tab).classList.add('active');
     if (tab === 'inquiries') renderInquiryList();
-    const titles = { dashboard:'대시보드', inquiries:'상담 신청 내역', images:'이미지 관리', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
+    if (tab === 'handel') loadBeethovenSettings();
+    const titles = { dashboard:'대시보드', inquiries:'상담 신청 내역', images:'이미지 관리', handel:'헨델프로젝트 이미지', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
     document.getElementById('tabTitle').textContent = titles[tab] || tab;
   });
 });
