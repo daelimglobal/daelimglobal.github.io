@@ -1236,6 +1236,121 @@ setupFileUpload('sf');
 setupFileUpload('ab');
 
 /* ==========================================
+   헨델프로젝트 이미지 파일 업로드
+   ========================================== */
+async function uploadImageToGitHub(file) {
+  const token  = (localStorage.getItem('dg_gh_token')  || '').trim();
+  const branch = (localStorage.getItem('dg_gh_branch') || 'gh-pages').trim();
+  const repo   = detectRepo() || (localStorage.getItem('dg_gh_repo') || '').trim();
+  if (!token || !repo) return null;
+
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `img/uploads/${Date.now()}.${ext}`;
+  const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
+
+  try {
+    const putResp = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: '헨델 이미지 업로드', content: base64, branch }),
+    });
+    if (!putResp.ok) return null;
+    const [user, repoName] = repo.split('/');
+    return `https://${user}.github.io/${repoName}/${path}`;
+  } catch(e) { return null; }
+}
+
+async function handleHandelFileUpload(file, idx) {
+  if (!file || !file.type.startsWith('image/')) return;
+  if (file.size > 5 * 1024 * 1024) { alert('파일 크기가 5MB를 초과합니다.'); return; }
+
+  const statusEl = document.getElementById('handel-status-' + idx);
+  const inputs = document.querySelectorAll('.bh-img-url');
+  const hidden = inputs[idx];
+
+  const objectUrl = URL.createObjectURL(file);
+  setPreview('bh-preview-' + idx, objectUrl);
+  if (statusEl) { statusEl.style.color = '#888'; statusEl.textContent = '📤 업로드 중...'; }
+
+  const token = (localStorage.getItem('dg_gh_token') || '').trim();
+
+  if (!token) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (hidden) hidden.value = e.target.result;
+      setPreview('bh-preview-' + idx, e.target.result);
+      URL.revokeObjectURL(objectUrl);
+      if (statusEl) { statusEl.style.color = '#f0a500'; statusEl.textContent = '⚠️ 이 기기에만 저장 (GitHub 토큰 설정 시 모든 기기 공유)'; }
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  const url = await uploadImageToGitHub(file);
+  URL.revokeObjectURL(objectUrl);
+
+  if (url) {
+    if (hidden) hidden.value = url;
+    setPreview('bh-preview-' + idx, url);
+    if (statusEl) { statusEl.style.color = '#3D6B4F'; statusEl.textContent = '✅ 업로드 완료 (GitHub 반영 중)'; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000); }
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (hidden) hidden.value = e.target.result;
+      setPreview('bh-preview-' + idx, e.target.result);
+      if (statusEl) { statusEl.style.color = '#e05252'; statusEl.textContent = '❌ GitHub 업로드 실패 — 이 기기에만 저장됨'; }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+window.clearHandelImg = function(idx) {
+  const inputs = document.querySelectorAll('.bh-img-url');
+  if (inputs[idx]) inputs[idx].value = '';
+  setPreview('bh-preview-' + idx, '');
+  const statusEl = document.getElementById('handel-status-' + idx);
+  if (statusEl) statusEl.textContent = '';
+  const fileInput = document.getElementById('handel-file-' + idx);
+  if (fileInput) fileInput.value = '';
+};
+
+function setupHandelUploads() {
+  const warningEl = document.getElementById('handel-gh-warning');
+  if (warningEl) warningEl.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
+
+  [0, 1, 2].forEach(idx => {
+    const fileInput = document.getElementById('handel-file-' + idx);
+    const dropZone  = document.getElementById('handel-drop-' + idx);
+
+    if (fileInput) {
+      fileInput.addEventListener('change', e => { if (e.target.files[0]) handleHandelFileUpload(e.target.files[0], idx); });
+    }
+    if (dropZone) {
+      dropZone.addEventListener('click', () => { if (fileInput) fileInput.click(); });
+      dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) handleHandelFileUpload(e.dataTransfer.files[0], idx);
+      });
+    }
+  });
+}
+setupHandelUploads();
+
+/* ==========================================
    드래그&드롭 순서 변경
    ========================================== */
 function initDragSort(listId, storageKey, defaultData, renderFn) {
