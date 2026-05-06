@@ -242,10 +242,10 @@ document.getElementById('saveBeethovenBtn').addEventListener('click', () => {
   const msgEl = document.getElementById('beethoven-save-msg');
   if (msgEl) {
     msgEl.style.color = '#3D6B4F';
-    msgEl.textContent = '✅ 베토벤하우스 이미지가 저장되었습니다. GitHub 동기화 후 모든 기기에 반영됩니다.';
+    msgEl.textContent = '✅ 헨델프로젝트 이미지가 저장되었습니다. GitHub 동기화 후 모든 기기에 반영됩니다.';
     setTimeout(() => { msgEl.textContent = ''; }, 5000);
   }
-  showSaved('베토벤하우스 저장 완료 ✓');
+  showSaved('헨델프로젝트 저장 완료 ✓');
 });
 
 /* ── 기본 데이터 ── */
@@ -537,6 +537,7 @@ function _renderInquiryRows(all, container, prependHtml) {
               <option ${item.status==='확인완료'?'selected':''}>확인완료</option>
               <option ${item.status==='처리완료'?'selected':''}>처리완료</option>
             </select>
+            <button class="btn-sm" style="color:#e05252;border:1.5px solid #e05252;background:transparent;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:13px" onclick="deleteInqByKey('${safeKey}')" title="삭제">🗑️</button>
           </div>
         </div>
         <div class="inq-detail" style="display:none">
@@ -601,6 +602,23 @@ window.deleteSelectedInquiries = function() {
   _inqLoading = false;
   renderInquiryList();
   showSaved('선택 항목이 삭제되었습니다.');
+};
+
+window.deleteInqByKey = function(safeKey) {
+  if (!confirm('이 상담 신청을 삭제할까요?')) return;
+  const key = decodeURIComponent(safeKey);
+  const list = getInquiries().filter(i => (i.신청시각 + '|' + i.성함) !== key);
+  saveInquiries(list);
+  const deleted = new Set(JSON.parse(localStorage.getItem('dg_inq_deleted') || '[]'));
+  deleted.add(key);
+  localStorage.setItem('dg_inq_deleted', JSON.stringify([...deleted]));
+  if (_gasCache) {
+    const [ts, name] = key.split('|');
+    _gasCache = _gasCache.filter(i => !(i.신청시각 === ts && i.성함 === name));
+  }
+  _inqLoading = false;
+  renderInquiryList();
+  showSaved('삭제되었습니다.');
 };
 
 window.saveInqStatus = function(safeKey, status, card) {
@@ -948,7 +966,7 @@ function deleteVideo(id) {
 function loadContentEditor() {
   const ct = load('customText', {});
   const defaults = {
-    navAbout: '회사소개', navBeethoven: '베토벤하우스', navServices: '서비스',
+    navAbout: '회사소개', navBeethoven: '헨델프로젝트', navServices: '서비스',
     navProcess: '건축과정', navPortfolio: '시공사례', navSocial: '사회공헌', navCta: '무료상담',
     heroTitle: '합리적 가격으로<br><em>고품격 주택</em>을<br>건축합니다',
     heroSub: 'We build high-quality homes at affordable prices',
