@@ -194,6 +194,11 @@ textarea { resize: vertical; }
 .img-drop-zone label { cursor: pointer; font-size: 13px; color: var(--text-md); }
 .img-drop-zone label:hover { color: var(--p); }
 
+.handel-drop-zone { cursor: pointer; border-radius: 10px; transition: box-shadow .2s; }
+.handel-drop-zone:hover { box-shadow: 0 0 0 3px rgba(201,169,110,.4); }
+.handel-drop-zone.dragover { box-shadow: 0 0 0 3px var(--gold); }
+.handel-drop-zone .img-preview { cursor: pointer; }
+
 /* ── Dashboard ── */
 .dash-cards {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 32px;
