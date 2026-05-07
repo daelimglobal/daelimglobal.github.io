@@ -248,18 +248,36 @@ function loadBeethovenSettings() {
   set('bh-youtube-url', bData.youtubeUrl || '');
 }
 
-document.getElementById('saveBeethovenBtn').addEventListener('click', () => {
+document.getElementById('saveBeethovenBtn').addEventListener('click', async () => {
   const imgs = Array.from(document.querySelectorAll('.bh-img-url')).map(inp => inp.value.trim());
   const ytUrl = (document.getElementById('bh-youtube-url') && document.getElementById('bh-youtube-url').value.trim()) || '';
   const bData = { images: imgs, youtubeUrl: ytUrl };
-  save('beethoven', bData);
+
+  localStorage.setItem('dg_beethoven', JSON.stringify(bData));
+
   const msgEl = document.getElementById('beethoven-save-msg');
-  if (msgEl) {
-    msgEl.style.color = '#3D6B4F';
-    msgEl.textContent = '✅ 헨델프로젝트 이미지가 저장되었습니다. GitHub 동기화 후 모든 기기에 반영됩니다.';
-    setTimeout(() => { msgEl.textContent = ''; }, 5000);
+  const token = (localStorage.getItem('dg_gh_token') || '').trim();
+
+  if (!token) {
+    if (msgEl) {
+      msgEl.style.color = '#e05252';
+      msgEl.textContent = '⚠️ GitHub 토큰 미설정 — 기본설정 탭에서 토큰을 입력하면 홈페이지에 반영됩니다.';
+      setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 7000);
+    }
+    showSaved('로컬 저장 완료 (토큰 필요)');
+    return;
   }
-  showSaved('헨델프로젝트 저장 완료 ✓');
+
+  if (msgEl) { msgEl.style.color = '#888'; msgEl.textContent = '📤 홈페이지에 반영 중...'; }
+  const ok = await commitContentToGitHub();
+  if (msgEl) {
+    msgEl.style.color = ok ? '#3D6B4F' : '#e05252';
+    msgEl.textContent = ok
+      ? '✅ 저장 완료! 1~2분 후 홈페이지에 이미지가 표시됩니다.'
+      : '❌ GitHub 저장 실패 — 기본설정에서 토큰·브랜치를 확인해주세요.';
+    setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 8000);
+  }
+  showSaved(ok ? '헨델프로젝트 저장 완료 ✓' : '저장 실패 ✗');
 });
 
 /* ── 기본 데이터 ── */
