@@ -102,17 +102,17 @@
     },
     {
       "id": 1777180088172,
-      "title": "강화 35평(1층 26평+ 2층 9평)",
+      "title": "강화 35평",
       "youtubeId": "x2anEgPMVt4"
     },
     {
       "id": 1777180984480,
-      "title": "논산 27평(전용부21평+선룸부 6평)",
+      "title": "논산 27평",
       "youtubeId": "13VC0DufZ2E"
     },
     {
       "id": 1777182051101,
-      "title": "충남 보령 35평(전용부 26평+ 포치부 9평)",
+      "title": "충남 보령 35평",
       "youtubeId": "Hue4TjPJbjY"
     }
   ],
@@ -148,11 +148,9 @@
   },
   "beethoven": {
     "images": [
-      "",
-      "",
-      "",
-      "",
-      ""
+      "https://guntop2222-source.github.io/company-homepage/img/uploads/1778166727653.jpg",
+      "https://guntop2222-source.github.io/company-homepage/img/uploads/1778166734746.jpg",
+      "https://guntop2222-source.github.io/company-homepage/img/uploads/1778166744322.jpg"
     ],
     "youtubeUrl": ""
   }
