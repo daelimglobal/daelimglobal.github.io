@@ -114,26 +114,31 @@ async function commitContentToGitHub() {
   const repo   = detectRepo() || (localStorage.getItem('dg_gh_repo') || '').trim();
   if (!token || !repo) return false;
 
-  const content = {
-    portfolio:  load('portfolio', DEFAULT_PORTFOLIO),
-    social:     load('social',    DEFAULT_SOCIAL),
-    videos:     load('videos',    []),
-    info:       load('info',      DEFAULT_INFO),
-    customText: load('customText', {}),
-    images:     load('images',    { aboutImg: '' }),
-    beethoven:  load('beethoven', { images: ['','','','',''], youtubeUrl: '' }),
-  };
-  const jsonStr = JSON.stringify(content, null, 2);
-  const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
-  const apiUrl  = `https://api.github.com/repos/${repo}/contents/content.json`;
+  const apiUrl = `https://api.github.com/repos/${repo}/contents/content.json`;
 
   try {
     let sha = null;
+    let baseContent = {};
     const getResp = await fetch(`${apiUrl}?ref=${branch}`, {
       headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
     });
-    if (getResp.ok) sha = (await getResp.json()).sha;
+    if (getResp.ok) {
+      const fileData = await getResp.json();
+      sha = fileData.sha;
+      try {
+        baseContent = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, '')))));
+      } catch(e) {}
+    }
 
+    /* GitHub 기존 데이터를 베이스로, localStorage에 저장된 키만 덮어씀 */
+    const content = Object.assign({}, baseContent);
+    ['portfolio','social','videos','info','customText','images','beethoven'].forEach(k => {
+      const v = localStorage.getItem('dg_' + k);
+      if (v !== null) { try { content[k] = JSON.parse(v); } catch(e) {} }
+    });
+
+    const jsonStr = JSON.stringify(content, null, 2);
+    const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
     const body = { message: '관리자 콘텐츠 업데이트', content: encoded, branch };
     if (sha) body.sha = sha;
 
@@ -175,7 +180,8 @@ function scheduleGitHubCommit() {
 /* content.json에서 최신 데이터 로드 (관리자 패널 동기화) */
 async function loadContentJSON() {
   try {
-    const resp = await fetch('/content.json', { cache: 'no-store' });
+    const url = new URL('../content.json', location.href).href;
+    const resp = await fetch(url, { cache: 'no-store' });
     if (!resp.ok) return false;
     const data = await resp.json();
     ['portfolio','social','videos','info','customText','images','beethoven'].forEach(k => {
