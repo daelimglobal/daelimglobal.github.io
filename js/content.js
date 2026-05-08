@@ -218,7 +218,8 @@ function applyCustomText() {
     'heroTitle','heroSub','aboutTitle','aboutLead','aboutDesc',
     'socialLead','missionTitle','missionDesc',
     'socialStat1Num','socialStat1Label','socialStat2Num','socialStat2Label','socialStat3Num','socialStat3Label',
-    'ctaTitle','ctaDesc','footerTagline','stat1Label','stat2Label',
+    'ctaTitle','ctaDesc','footerTagline',
+    'stat1Num','stat1Label','stat2Num','stat2Label','stat3Num','stat3Label','stat4Num','stat4Label',
   ];
   fields.forEach(id => {
     if (ct[id]) { const el = document.getElementById(id); if (el) el.innerHTML = ct[id]; }

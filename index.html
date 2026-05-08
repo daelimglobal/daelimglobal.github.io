@@ -95,6 +95,33 @@
   </div>
 </section>
 
+<!-- ===== STATS BAR ===== -->
+<div class="stats-bar">
+  <div class="container">
+    <div class="stats-row">
+      <div class="stat">
+        <b><span class="cnt" data-target="300" id="stat1Num">300</span>+</b>
+        <span id="stat1Label">전국 완공 프로젝트</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <b class="stat-word" id="stat2Num">전국</b>
+        <span id="stat2Label">어디서나 시공 가능</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <b><span class="cnt" data-target="99" id="stat3Num">99</span>%</b>
+        <span id="stat3Label">고객 만족도</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <b><span class="cnt" data-target="10" id="stat4Num">10</span>년+</b>
+        <span id="stat4Label">전문 건축 경험</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== ABOUT ===== -->
 <section class="section about-section" id="about">
   <div class="container">
@@ -258,6 +285,8 @@
             <p id="socialFeaturedDesc">취약계층 어르신들의 낡은 주거환경을 개선하여 안전하고 따뜻한 삶을 지원합니다.</p>
           </div>
         </div>
+        <div id="socialFeaturedGallery" style="display:none;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;"></div>
+        <a href="#" class="social-yt-btn" id="socialFeaturedYT" target="_blank" rel="noopener" style="display:none;margin-top:10px;">▶ 영상 보기</a>
       </div>
     </div>
 
@@ -353,9 +382,13 @@
               <label>희망 평형</label>
               <select name="size">
                 <option value="">선택하세요</option>
+                <option>10평형 (33㎡)</option>
+                <option>15평형 (50㎡)</option>
+                <option>20평형 (66㎡)</option>
+                <option>25평형 (83㎡)</option>
                 <option>30평형 (99㎡)</option>
+                <option>35평형 (116㎡)</option>
                 <option>40평형 (132㎡)</option>
-                <option>50평형 (165㎡)</option>
                 <option>기타 (직접 협의)</option>
               </select>
             </div>

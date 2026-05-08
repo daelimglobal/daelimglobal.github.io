@@ -1015,6 +1015,10 @@ function loadContentEditor() {
     ctaTitle: '지금 바로 무료 건축상담을 받아보세요',
     ctaDesc: '전문 건축 상담사가 부지분석부터 설계, 비용까지 친절하게 안내해 드립니다',
     footerTagline: '건축명가 (주)대림글로벌\n합리적 가격으로 고품격 주택을 건축합니다',
+    stat1Num: '300', stat1Label: '전국 완공 프로젝트',
+    stat2Num: '전국', stat2Label: '어디서나 시공 가능',
+    stat3Num: '99', stat3Label: '고객 만족도',
+    stat4Num: '10', stat4Label: '전문 건축 경험',
   };
   Object.keys(defaults).forEach(k => {
     const el = document.getElementById('ct-' + k);
@@ -1026,6 +1030,7 @@ document.getElementById('saveContentBtn').addEventListener('click', () => {
   const keys = [
     'navAbout','navBeethoven','navServices','navProcess','navPortfolio','navSocial','navCta',
     'heroTitle','heroSub','aboutTitle','aboutLead','aboutDesc',
+    'stat1Num','stat1Label','stat2Num','stat2Label','stat3Num','stat3Label','stat4Num','stat4Label',
     'socialLead','socialStat1Num','socialStat1Label','socialStat2Num','socialStat2Label','socialStat3Num','socialStat3Label',
     'missionTitle','missionDesc','ctaTitle','ctaDesc','footerTagline',
   ];
