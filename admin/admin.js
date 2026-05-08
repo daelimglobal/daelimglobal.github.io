@@ -239,7 +239,7 @@ window.applyBhImg = function(idx) {
 };
 
 function loadBeethovenSettings() {
-  const bData = load('beethoven', { images: ['','','','',''], youtubeUrl: '' });
+  const bData = load('beethoven', { images: ['','','','','',''], youtubeUrl: '' });
   const imgs = bData.images || [];
   document.querySelectorAll('.bh-img-url').forEach((inp, i) => {
     inp.value = imgs[i] || '';
@@ -1370,7 +1370,7 @@ function setupHandelUploads() {
   const warningEl = document.getElementById('handel-gh-warning');
   if (warningEl) warningEl.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
 
-  [0, 1, 2].forEach(idx => {
+  [0, 1, 2, 3, 4, 5].forEach(idx => {
     const fileInput = document.getElementById('handel-file-' + idx);
     const dropZone  = document.getElementById('handel-drop-' + idx);
 

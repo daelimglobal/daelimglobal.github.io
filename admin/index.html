@@ -227,10 +227,10 @@
 
     <!-- ─── 헨델프로젝트 이미지 ─── -->
     <div id="tab-handel" class="tab-content">
-      <div class="notice-box">🏛️ <strong>헨델프로젝트 이미지:</strong> 홈페이지 헨델프로젝트 섹션 내용 바로 아래에 표시되는 사진 3장을 관리합니다. 저장 후 PC·모바일 모든 기기에 반영됩니다.</div>
+      <div class="notice-box">🏛️ <strong>헨델프로젝트 이미지:</strong> 홈페이지 헨델프로젝트 섹션 내용 바로 아래에 표시되는 사진 최대 6장을 관리합니다. 저장 후 PC·모바일 모든 기기에 반영됩니다.</div>
       <div class="settings-grid">
         <div class="settings-block full">
-          <h3>🏛️ 헨델프로젝트 소개 사진 (3장)</h3>
+          <h3>🏛️ 헨델프로젝트 소개 사진 (최대 6장)</h3>
           <p class="settings-desc">사진을 클릭하거나 파일을 드래그하여 업로드하세요. GitHub 토큰이 설정된 경우 자동으로 서버에 업로드되어 <strong>PC·모바일 모두에서 표시</strong>됩니다.</p>
           <div id="handel-gh-warning" style="display:none;background:#fff3cd;border:1px solid #ffc107;padding:10px 14px;border-radius:8px;font-size:12px;color:#856404;margin-bottom:12px">
             ⚠️ GitHub 토큰이 설정되지 않아 이미지가 이 기기에서만 저장됩니다. <button class="btn-sm btn-outline" style="margin-left:8px" onclick="document.querySelector('[data-tab=settings]').click()">토큰 설정하기 →</button>
@@ -274,6 +274,45 @@
               </div>
               <div id="handel-status-2" style="font-size:11px;margin-top:4px;min-height:16px"></div>
               <input type="hidden" class="bh-img-url" data-idx="2">
+            </div>
+            <div class="fg">
+              <label>사진 4</label>
+              <div class="handel-drop-zone" id="handel-drop-3" data-idx="3">
+                <div class="img-preview bh-preview" id="bh-preview-3" style="height:180px;border-radius:8px"><span>클릭하거나 드래그</span></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+                <input type="file" accept="image/*" id="handel-file-3" hidden>
+                <label for="handel-file-3" class="btn-sm btn-primary" style="cursor:pointer">📁 파일 선택</label>
+                <button type="button" onclick="clearHandelImg(3)" style="color:#e05252;border:1.5px solid #e05252;background:transparent;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">🗑️ 삭제</button>
+              </div>
+              <div id="handel-status-3" style="font-size:11px;margin-top:4px;min-height:16px"></div>
+              <input type="hidden" class="bh-img-url" data-idx="3">
+            </div>
+            <div class="fg">
+              <label>사진 5</label>
+              <div class="handel-drop-zone" id="handel-drop-4" data-idx="4">
+                <div class="img-preview bh-preview" id="bh-preview-4" style="height:180px;border-radius:8px"><span>클릭하거나 드래그</span></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+                <input type="file" accept="image/*" id="handel-file-4" hidden>
+                <label for="handel-file-4" class="btn-sm btn-primary" style="cursor:pointer">📁 파일 선택</label>
+                <button type="button" onclick="clearHandelImg(4)" style="color:#e05252;border:1.5px solid #e05252;background:transparent;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">🗑️ 삭제</button>
+              </div>
+              <div id="handel-status-4" style="font-size:11px;margin-top:4px;min-height:16px"></div>
+              <input type="hidden" class="bh-img-url" data-idx="4">
+            </div>
+            <div class="fg">
+              <label>사진 6</label>
+              <div class="handel-drop-zone" id="handel-drop-5" data-idx="5">
+                <div class="img-preview bh-preview" id="bh-preview-5" style="height:180px;border-radius:8px"><span>클릭하거나 드래그</span></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+                <input type="file" accept="image/*" id="handel-file-5" hidden>
+                <label for="handel-file-5" class="btn-sm btn-primary" style="cursor:pointer">📁 파일 선택</label>
+                <button type="button" onclick="clearHandelImg(5)" style="color:#e05252;border:1.5px solid #e05252;background:transparent;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">🗑️ 삭제</button>
+              </div>
+              <div id="handel-status-5" style="font-size:11px;margin-top:4px;min-height:16px"></div>
+              <input type="hidden" class="bh-img-url" data-idx="5">
             </div>
           </div>
           <div class="fg" style="margin-top:20px">

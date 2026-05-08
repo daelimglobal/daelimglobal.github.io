@@ -116,6 +116,7 @@ const ADMIN_IDS = [
   // 헨델
   'tab-handel', 'saveBeethovenBtn', 'bh-youtube-url',
   'handel-drop-0', 'handel-drop-1', 'handel-drop-2',
+  'handel-drop-3', 'handel-drop-4', 'handel-drop-5',
   // 사회공헌
   'socialForm', 'addSocialBtn', 'saveSocialBtn',
   // 텍스트 편집
