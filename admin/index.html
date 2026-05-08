@@ -300,64 +300,86 @@
         <div class="form-grid-2">
           <div class="fg"><label>지역명 *</label><input type="text" id="pf-title" placeholder="예: 경기도 양평"></div>
           <div class="fg"><label>평형 *</label><input type="text" id="pf-size" placeholder="예: 40평"></div>
-          <div class="fg"><label>타입</label><input type="text" id="pf-type" placeholder="예: 베토벤 40"></div>
+          <div class="fg"><label>타입</label><input type="text" id="pf-type" placeholder="예: 헨델 40"></div>
           <div class="fg"><label>스타일</label><input type="text" id="pf-style" placeholder="예: 모던 스타일"></div>
         </div>
-        <div class="fg">
-          <label>대표 이미지 (사진 1)</label>
-          <div class="img-upload-area" id="pf-img-area">
-            <div class="img-preview" id="pf-preview"><span>이미지 없음</span></div>
-            <div class="img-input-row">
-              <input type="text" id="pf-img-url" placeholder="이미지 URL 입력 (https://...)">
-              <button type="button" class="btn-sm btn-outline" onclick="applyImgUrl('pf')">URL 적용</button>
-            </div>
-            <div class="img-drop-zone" id="pf-drop">
-              <input type="file" accept="image/*" id="pf-file" hidden>
-              <label for="pf-file">📁 파일 선택 또는 여기에 드래그&드롭</label>
-            </div>
-          </div>
+
+        <div id="pf-gh-warning" style="display:none;background:#fff3cd;border:1px solid #ffc107;padding:10px 14px;border-radius:8px;font-size:12px;color:#856404;margin-bottom:16px">
+          ⚠️ GitHub 토큰이 설정되지 않아 이미지가 이 기기에서만 저장됩니다. <button class="btn-sm btn-outline" style="margin-left:8px" onclick="document.querySelector('[data-tab=settings]').click()">토큰 설정하기 →</button>
         </div>
-        <div class="fg">
-          <label>사진 2</label>
-          <div class="img-upload-area">
-            <div class="img-preview" id="pf-preview2"><span>이미지 없음</span></div>
-            <div class="img-input-row">
-              <input type="text" id="pf-img2-url" placeholder="이미지 URL 입력 (https://...)">
-              <button type="button" class="btn-sm btn-outline" onclick="applyPfImg(2)">URL 적용</button>
+
+        <p style="font-size:13px;color:#666;margin-bottom:12px">📸 사진을 클릭하거나 드래그&드롭으로 업로드하세요. 순서대로 홈페이지에 표시됩니다.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px">
+
+          <!-- 사진 1 -->
+          <div class="fg">
+            <label>사진 1 <span style="color:#e05252">*</span> (대표)</label>
+            <div class="pf-drop-zone" id="pf-drop-1" data-num="1">
+              <div class="img-preview pf-img-preview" id="pf-preview-1" style="height:160px;border-radius:8px"><span>클릭하거나 드래그</span></div>
             </div>
-          </div>
-        </div>
-        <div class="fg">
-          <label>사진 3</label>
-          <div class="img-upload-area">
-            <div class="img-preview" id="pf-preview3"><span>이미지 없음</span></div>
-            <div class="img-input-row">
-              <input type="text" id="pf-img3-url" placeholder="이미지 URL 입력 (https://...)">
-              <button type="button" class="btn-sm btn-outline" onclick="applyPfImg(3)">URL 적용</button>
+            <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+              <input type="file" accept="image/*" id="pf-file-1" hidden>
+              <label for="pf-file-1" class="btn-sm btn-primary" style="cursor:pointer;flex:1;text-align:center">📁 파일 선택</label>
+              <button type="button" onclick="clearPfImg(1)" class="btn-sm" style="color:#e05252;border:1.5px solid #e05252;background:transparent;cursor:pointer">🗑</button>
             </div>
+            <div id="pf-status-1" style="font-size:11px;margin-top:4px;min-height:16px;color:#888"></div>
+            <input type="hidden" id="pf-img-final" class="pf-img-hidden" data-num="1">
           </div>
-        </div>
-        <div class="fg">
-          <label>사진 4</label>
-          <div class="img-upload-area">
-            <div class="img-preview" id="pf-preview4"><span>이미지 없음</span></div>
-            <div class="img-input-row">
-              <input type="text" id="pf-img4-url" placeholder="이미지 URL 입력 (https://...)">
-              <button type="button" class="btn-sm btn-outline" onclick="applyPfImg(4)">URL 적용</button>
+
+          <!-- 사진 2 -->
+          <div class="fg">
+            <label>사진 2</label>
+            <div class="pf-drop-zone" id="pf-drop-2" data-num="2">
+              <div class="img-preview pf-img-preview" id="pf-preview-2" style="height:160px;border-radius:8px"><span>클릭하거나 드래그</span></div>
             </div>
+            <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+              <input type="file" accept="image/*" id="pf-file-2" hidden>
+              <label for="pf-file-2" class="btn-sm btn-primary" style="cursor:pointer;flex:1;text-align:center">📁 파일 선택</label>
+              <button type="button" onclick="clearPfImg(2)" class="btn-sm" style="color:#e05252;border:1.5px solid #e05252;background:transparent;cursor:pointer">🗑</button>
+            </div>
+            <div id="pf-status-2" style="font-size:11px;margin-top:4px;min-height:16px;color:#888"></div>
+            <input type="hidden" id="pf-img2-final" class="pf-img-hidden" data-num="2">
           </div>
+
+          <!-- 사진 3 -->
+          <div class="fg">
+            <label>사진 3</label>
+            <div class="pf-drop-zone" id="pf-drop-3" data-num="3">
+              <div class="img-preview pf-img-preview" id="pf-preview-3" style="height:160px;border-radius:8px"><span>클릭하거나 드래그</span></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+              <input type="file" accept="image/*" id="pf-file-3" hidden>
+              <label for="pf-file-3" class="btn-sm btn-primary" style="cursor:pointer;flex:1;text-align:center">📁 파일 선택</label>
+              <button type="button" onclick="clearPfImg(3)" class="btn-sm" style="color:#e05252;border:1.5px solid #e05252;background:transparent;cursor:pointer">🗑</button>
+            </div>
+            <div id="pf-status-3" style="font-size:11px;margin-top:4px;min-height:16px;color:#888"></div>
+            <input type="hidden" id="pf-img3-final" class="pf-img-hidden" data-num="3">
+          </div>
+
+          <!-- 사진 4 -->
+          <div class="fg">
+            <label>사진 4</label>
+            <div class="pf-drop-zone" id="pf-drop-4" data-num="4">
+              <div class="img-preview pf-img-preview" id="pf-preview-4" style="height:160px;border-radius:8px"><span>클릭하거나 드래그</span></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+              <input type="file" accept="image/*" id="pf-file-4" hidden>
+              <label for="pf-file-4" class="btn-sm btn-primary" style="cursor:pointer;flex:1;text-align:center">📁 파일 선택</label>
+              <button type="button" onclick="clearPfImg(4)" class="btn-sm" style="color:#e05252;border:1.5px solid #e05252;background:transparent;cursor:pointer">🗑</button>
+            </div>
+            <div id="pf-status-4" style="font-size:11px;margin-top:4px;min-height:16px;color:#888"></div>
+            <input type="hidden" id="pf-img4-final" class="pf-img-hidden" data-num="4">
+          </div>
+
         </div>
+
         <div class="fg">
           <label>🎬 유튜브 채널/영상 주소</label>
           <input type="url" id="pf-youtube-url" placeholder="https://www.youtube.com/@채널명 또는 영상 주소">
         </div>
-        <input type="hidden" id="pf-img-final">
-        <input type="hidden" id="pf-img2-final">
-        <input type="hidden" id="pf-img3-final">
-        <input type="hidden" id="pf-img4-final">
         <input type="hidden" id="pf-edit-id">
         <div class="form-actions">
-          <button class="btn-primary" id="savePortfolioBtn">저장</button>
+          <button class="btn-primary" id="savePortfolioBtn">저장 및 홈페이지 반영</button>
           <button class="btn-outline" onclick="closeForm('portfolio')">취소</button>
         </div>
       </div>

@@ -757,15 +757,24 @@ function renderPortfolioList() {
   initDragSort('portfolioList', 'portfolio', DEFAULT_PORTFOLIO, renderPortfolioList);
 }
 
+function _pfClearForm() {
+  clearForm(['pf-title','pf-size','pf-type','pf-style','pf-youtube-url','pf-edit-id']);
+  [1,2,3,4].forEach(n => {
+    const hiddenId = n === 1 ? 'pf-img-final' : `pf-img${n}-final`;
+    set(hiddenId, '');
+    setPreview(`pf-preview-${n}`, '');
+    const statusEl = document.getElementById(`pf-status-${n}`);
+    if (statusEl) statusEl.textContent = '';
+    const fileInput = document.getElementById(`pf-file-${n}`);
+    if (fileInput) fileInput.value = '';
+  });
+}
+
 document.getElementById('addPortfolioBtn').addEventListener('click', () => {
   document.getElementById('portfolioFormTitle').textContent = '시공사례 추가';
-  clearForm(['pf-title','pf-size','pf-type','pf-style',
-             'pf-img-url','pf-img-final',
-             'pf-img2-url','pf-img2-final',
-             'pf-img3-url','pf-img3-final',
-             'pf-img4-url','pf-img4-final',
-             'pf-youtube-url','pf-edit-id']);
-  ['pf-preview','pf-preview2','pf-preview3','pf-preview4'].forEach(id => setPreview(id, ''));
+  _pfClearForm();
+  const warn = document.getElementById('pf-gh-warning');
+  if (warn) warn.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
   document.getElementById('portfolioForm').style.display = 'block';
   document.getElementById('portfolioForm').scrollIntoView({ behavior:'smooth' });
 });
@@ -775,18 +784,21 @@ function editPortfolio(id) {
   const p = items.find(x => x.id === id);
   if (!p) return;
   document.getElementById('portfolioFormTitle').textContent = '시공사례 편집';
+  _pfClearForm();
   set('pf-title', p.title); set('pf-size', p.size);
   set('pf-type', p.type);   set('pf-style', p.style);
-  set('pf-img-url', p.img);        set('pf-img-final', p.img);
-  set('pf-img2-url', p.photo2||''); set('pf-img2-final', p.photo2||'');
-  set('pf-img3-url', p.photo3||''); set('pf-img3-final', p.photo3||'');
-  set('pf-img4-url', p.photo4||''); set('pf-img4-final', p.photo4||'');
-  set('pf-youtube-url', p.youtubeUrl||'');
+  set('pf-img-final',  p.img      || '');
+  set('pf-img2-final', p.photo2   || '');
+  set('pf-img3-final', p.photo3   || '');
+  set('pf-img4-final', p.photo4   || '');
+  set('pf-youtube-url', p.youtubeUrl || '');
   set('pf-edit-id', p.id);
-  setPreview('pf-preview',  p.img);
-  setPreview('pf-preview2', p.photo2||'');
-  setPreview('pf-preview3', p.photo3||'');
-  setPreview('pf-preview4', p.photo4||'');
+  setPreview('pf-preview-1', p.img      || '');
+  setPreview('pf-preview-2', p.photo2   || '');
+  setPreview('pf-preview-3', p.photo3   || '');
+  setPreview('pf-preview-4', p.photo4   || '');
+  const warn = document.getElementById('pf-gh-warning');
+  if (warn) warn.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
   document.getElementById('portfolioForm').style.display = 'block';
   document.getElementById('portfolioForm').scrollIntoView({ behavior:'smooth' });
 }
@@ -802,7 +814,7 @@ document.getElementById('savePortfolioBtn').addEventListener('click', () => {
     title, size,
     type:       val('pf-type'),
     style:      val('pf-style'),
-    img:        val('pf-img-final')  || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80',
+    img:        val('pf-img-final')  || '',
     photo2:     val('pf-img2-final') || '',
     photo3:     val('pf-img3-final') || '',
     photo4:     val('pf-img4-final') || '',
@@ -1378,6 +1390,84 @@ function setupHandelUploads() {
   });
 }
 setupHandelUploads();
+
+/* ==========================================
+   시공사례 이미지 파일 업로드
+   ========================================== */
+async function handlePortfolioFileUpload(file, num) {
+  if (!file || !file.type.startsWith('image/')) return;
+  if (file.size > 10 * 1024 * 1024) { alert('파일 크기가 10MB를 초과합니다.'); return; }
+
+  const hiddenId  = num === 1 ? 'pf-img-final' : `pf-img${num}-final`;
+  const statusEl  = document.getElementById(`pf-status-${num}`);
+  const previewId = `pf-preview-${num}`;
+
+  const objectUrl = URL.createObjectURL(file);
+  setPreview(previewId, objectUrl);
+  if (statusEl) { statusEl.style.color = '#888'; statusEl.textContent = '📤 업로드 중...'; }
+
+  const token = (localStorage.getItem('dg_gh_token') || '').trim();
+
+  if (!token) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      set(hiddenId, e.target.result);
+      setPreview(previewId, e.target.result);
+      URL.revokeObjectURL(objectUrl);
+      if (statusEl) { statusEl.style.color = '#f0a500'; statusEl.textContent = '⚠️ 이 기기에만 저장 (GitHub 토큰 설정 시 모든 기기 공유)'; }
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  const url = await uploadImageToGitHub(file);
+  URL.revokeObjectURL(objectUrl);
+
+  if (url) {
+    set(hiddenId, url);
+    setPreview(previewId, url);
+    if (statusEl) { statusEl.style.color = '#3D6B4F'; statusEl.textContent = '✅ 업로드 완료'; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000); }
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      set(hiddenId, e.target.result);
+      setPreview(previewId, e.target.result);
+      if (statusEl) { statusEl.style.color = '#e05252'; statusEl.textContent = '❌ GitHub 업로드 실패 — 이 기기에만 저장됨'; }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+window.clearPfImg = function(num) {
+  const hiddenId = num === 1 ? 'pf-img-final' : `pf-img${num}-final`;
+  set(hiddenId, '');
+  setPreview(`pf-preview-${num}`, '');
+  const statusEl = document.getElementById(`pf-status-${num}`);
+  if (statusEl) statusEl.textContent = '';
+  const fileInput = document.getElementById(`pf-file-${num}`);
+  if (fileInput) fileInput.value = '';
+};
+
+function setupPortfolioUploads() {
+  [1, 2, 3, 4].forEach(num => {
+    const fileInput = document.getElementById(`pf-file-${num}`);
+    const dropZone  = document.getElementById(`pf-drop-${num}`);
+    if (fileInput) {
+      fileInput.addEventListener('change', e => { if (e.target.files[0]) handlePortfolioFileUpload(e.target.files[0], num); });
+    }
+    if (dropZone) {
+      dropZone.addEventListener('click', () => { if (fileInput) fileInput.click(); });
+      dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) handlePortfolioFileUpload(e.dataTransfer.files[0], num);
+      });
+    }
+  });
+}
+setupPortfolioUploads();
 
 /* ==========================================
    드래그&드롭 순서 변경
