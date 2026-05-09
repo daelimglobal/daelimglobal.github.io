@@ -1,1 +1,136 @@
-{"portfolio":[{"id":1,"title":"강화","size":"35평","type":"","style":"","img":"https://guntop2222-source.github.io/company-homepage/img/uploads/portfolio_0_1778315094983.jpg","photo2":"","photo3":"","photo4":"","youtubeUrl":""},{"id":2,"title":"충남 논산","size":"27평","type":"","style":"","img":"https://guntop2222-source.github.io/company-homepage/img/uploads/portfolio_1_1778315094983.jpg","photo2":"","photo3":"","photo4":"","youtubeUrl":""},{"id":3,"title":"충남 보령","size":"35평","type":"","style":"","img":"https://guntop2222-source.github.io/company-homepage/img/uploads/portfolio_2_1778315094983.jpg","photo2":"","photo3":"","photo4":"","youtubeUrl":""},{"id":4,"title":"충남 금산 단지개발","size":"45평","type":"","style":"","img":"https://guntop2222-source.github.io/company-homepage/img/uploads/portfolio_3_1778315094983.jpg","photo2":"","photo3":"","photo4":"","youtubeUrl":""}],"social":[{"id":2,"tag":"매년 장학금 후원","title":"장학금 후원식","desc":"(주)대림글로벌은 건축의 가치를 사회와 나누기 위한 일원으로 매년 학생들에게 장학금 후원을 하고 있습니다.","img":"https://cdn.imweb.me/thumbnail/20251225/ffd6b1f617dad.png","photo2":"file:///C:/Users/GEON/OneDrive/%EB%B0%94%ED%83%95%20%ED%99%94%EB%A9%B4/%EC%9E%A5%ED%95%99%EA%B8%88%EC%88%98%EC%97%AC2.png","photo3":"","youtubeUrl":"","date":"매년"},{"id":3,"tag":"\"One Home, One School\"  캠페인을  세계 최초로 시행, 선도","title":"\"One Home, One School\" 캠페인 세계최초로 시행, 선도","desc":"집 한 채를 지을 때마다 학교 한 곳을 세우는\n\"One Home, One School\" 캠페인 시행","img":"https://cdn.imweb.me/thumbnail/20251225/d16e72f37ae3c.png","date":"<span style=\"font-size:15px;font-weight:700;color:#C9A96E\">집을 1채씩 완공할때 마다</span>"}],"videos":[{"id":1777178929410,"title":"충북 보은 30평","youtubeId":"1lDlo07ONVU"},{"id":1777180088172,"title":"강화 35평","youtubeId":"x2anEgPMVt4"},{"id":1777180984480,"title":"논산 27평","youtubeId":"13VC0DufZ2E"},{"id":1777182051101,"title":"충남 보령 35평","youtubeId":"Hue4TjPJbjY"}],"info":{"phone":"1668-3603","hours":"평일 09:00 - 18:00","address":"전국 어디서나 상담 가능","kakao":"http://pf.kakao.com/_lxijPG","copyright":"© 2024 (주)대림글로벌 DAELIM GLOBAL. All rights reserved.","footerHours":"평일 09:00 - 18:00"},"customText":{"heroTitle":"합리적 가격으로<br><em>고품격 주택</em>을<br>건축합니다","heroSub":"We build high-quality homes at affordable prices","aboutTitle":"대한민국을 대표하는<br><em>전원주택 건축 명가</em>","aboutLead":"(주)대림글로벌은 합리적 가격으로 고품격 주택을 건축하는 대한민국 대표 전원주택 시행사입니다.","aboutDesc":"전문 건축팀의 풍부한 경험을 바탕으로 고객 한 분 한 분의 꿈을 현실로 만들어 드립니다. 투명한 공사비와 합리적인 가격으로 누구나 부담 없이 고품격 주택을 가질 수 있도록, 전국 어디서나 최선을 다하고 있습니다.","socialLead":"집 한 채가 가족의 행복을 바꿉니다.\n대림글로벌은 건축의 가치를 사회와 함께 나눕니다.","socialStat1Num":"50+","socialStat1Label":"가구 주거환경 개선","socialStat2Num":"200+","socialStat2Label":"봉사 참여 인원","socialStat3Num":"10+","socialStat3Label":"협력 지역사회 기관","missionTitle":"대림글로벌의 사회공헌 약속","missionDesc":"저희는 단순히 집을 짓는 회사가 아닙니다. 취약계층의 주거환경을 개선하고, 지역사회와 함께 성장하는 기업이 되고자 합니다. 매년 이익의 일부를 사회공헌 활동에 환원하며, 더 많은 가정에 따뜻한 보금자리를 선물하겠습니다.","ctaTitle":"지금 바로 무료 건축상담을 받아보세요","ctaDesc":"전문 건축 상담사가 부지분석부터 설계, 비용까지 친절하게 안내해 드립니다","footerTagline":"건축명가 (주)대림글로벌\n합리적 가격으로 고품격 주택을 건축합니다"},"images":{"aboutImg":"https://guntop2222-source.github.io/company-homepage/img/uploads/about_1778315094983.jpg"},"beethoven":{"images":["https://guntop2222-source.github.io/company-homepage/img/uploads/handel_1_1778315094983.jpg","https://guntop2222-source.github.io/company-homepage/img/uploads/handel_2_1778315094983.jpg","https://guntop2222-source.github.io/company-homepage/img/uploads/handel_3_1778315094983.jpg"],"youtubeUrl":""}}
+{
+  "portfolio": [
+    {
+      "id": 1,
+      "title": "강화",
+      "size": "35평",
+      "type": "",
+      "style": "",
+      "img": "https://guntop2222-source.github.io/company-homepage/img/uploads/portfolio_0_1778315094983.jpg",
+      "photo2": "",
+      "photo3": "",
+      "photo4": "",
+      "youtubeUrl": ""
+    },
+    {
+      "id": 2,
+      "title": "충남 논산",
+      "size": "27평",
+      "type": "",
+      "style": "",
+      "img": "https://guntop2222-source.github.io/company-homepage/img/uploads/portfolio_1_1778315094983.jpg",
+      "photo2": "",
+      "photo3": "",
+      "photo4": "",
+      "youtubeUrl": ""
+    },
+    {
+      "id": 3,
+      "title": "충남 보령",
+      "size": "35평",
+      "type": "",
+      "style": "",
+      "img": "https://guntop2222-source.github.io/company-homepage/img/uploads/portfolio_2_1778315094983.jpg",
+      "photo2": "",
+      "photo3": "",
+      "photo4": "",
+      "youtubeUrl": ""
+    },
+    {
+      "id": 4,
+      "title": "충남 금산 단지개발",
+      "size": "45평",
+      "type": "",
+      "style": "",
+      "img": "https://guntop2222-source.github.io/company-homepage/img/uploads/portfolio_3_1778315094983.jpg",
+      "photo2": "",
+      "photo3": "",
+      "photo4": "",
+      "youtubeUrl": ""
+    }
+  ],
+  "social": [
+    {
+      "id": 2,
+      "tag": "매년 장학금 후원",
+      "title": "장학금 후원식",
+      "desc": "(주)대림글로벌은 건축의 가치를 사회와 나누기 위한 일원으로 매년 학생들에게 장학금 후원을 하고 있습니다.",
+      "img": "https://cdn.imweb.me/thumbnail/20251225/ffd6b1f617dad.png",
+      "photo2": "file:///C:/Users/GEON/OneDrive/%EB%B0%94%ED%83%95%20%ED%99%94%EB%A9%B4/%EC%9E%A5%ED%95%99%EA%B8%88%EC%88%98%EC%97%AC2.png",
+      "photo3": "",
+      "youtubeUrl": "",
+      "date": "매년"
+    },
+    {
+      "id": 3,
+      "tag": "\"One Home, One School\"  캠페인을  세계 최초로 시행, 선도",
+      "title": "\"One Home, One School\" 캠페인 세계최초로 시행, 선도",
+      "desc": "집 한 채를 지을 때마다 학교 한 곳을 세우는\n\"One Home, One School\" 캠페인 시행",
+      "img": "https://cdn.imweb.me/thumbnail/20251225/d16e72f37ae3c.png",
+      "date": "<span style=\"font-size:15px;font-weight:700;color:#C9A96E\">집을 1채씩 완공할때 마다</span>"
+    }
+  ],
+  "videos": [
+    {
+      "id": 1777178929410,
+      "title": "충북 보은 30평",
+      "youtubeId": "1lDlo07ONVU"
+    },
+    {
+      "id": 1777180088172,
+      "title": "강화 35평",
+      "youtubeId": "x2anEgPMVt4"
+    },
+    {
+      "id": 1777180984480,
+      "title": "논산 27평",
+      "youtubeId": "13VC0DufZ2E"
+    },
+    {
+      "id": 1777182051101,
+      "title": "충남 보령 35평",
+      "youtubeId": "Hue4TjPJbjY"
+    }
+  ],
+  "info": {
+    "phone": "1668-3603",
+    "hours": "평일 09:00 - 18:00",
+    "address": "전국 어디서나 상담 가능",
+    "kakao": "http://pf.kakao.com/_lxijPG",
+    "copyright": "© 2024 (주)대림글로벌 DAELIM GLOBAL. All rights reserved.",
+    "footerHours": "평일 09:00 - 18:00"
+  },
+  "customText": {
+    "heroTitle": "합리적 가격으로<br><em>고품격 주택</em>을<br>건축합니다",
+    "heroSub": "We build high-quality homes at affordable prices",
+    "aboutTitle": "대한민국을 대표하는<br><em>전원주택 건축 명가</em>",
+    "aboutLead": "(주)대림글로벌은 합리적 가격으로 고품격 주택을 건축하는 대한민국 대표 전원주택 시행사입니다.",
+    "aboutDesc": "전문 건축팀의 풍부한 경험을 바탕으로 고객 한 분 한 분의 꿈을 현실로 만들어 드립니다. 투명한 공사비와 합리적인 가격으로 누구나 부담 없이 고품격 주택을 가질 수 있도록, 전국 어디서나 최선을 다하고 있습니다.",
+    "socialLead": "집 한 채가 가족의 행복을 바꿉니다.\n대림글로벌은 건축의 가치를 사회와 함께 나눕니다.",
+    "socialStat1Num": "50+",
+    "socialStat1Label": "가구 주거환경 개선",
+    "socialStat2Num": "200+",
+    "socialStat2Label": "봉사 참여 인원",
+    "socialStat3Num": "10+",
+    "socialStat3Label": "협력 지역사회 기관",
+    "missionTitle": "대림글로벌의 사회공헌 약속",
+    "missionDesc": "저희는 단순히 집을 짓는 회사가 아닙니다. 취약계층의 주거환경을 개선하고, 지역사회와 함께 성장하는 기업이 되고자 합니다. 매년 이익의 일부를 사회공헌 활동에 환원하며, 더 많은 가정에 따뜻한 보금자리를 선물하겠습니다.",
+    "ctaTitle": "지금 바로 무료 건축상담을 받아보세요",
+    "ctaDesc": "전문 건축 상담사가 부지분석부터 설계, 비용까지 친절하게 안내해 드립니다",
+    "footerTagline": "건축명가 (주)대림글로벌\n합리적 가격으로 고품격 주택을 건축합니다"
+  },
+  "images": {
+    "aboutImg": "https://guntop2222-source.github.io/company-homepage/img/uploads/about_1778315094983.jpg"
+  },
+  "beethoven": {
+    "images": [
+      "https://guntop2222-source.github.io/company-homepage/img/uploads/1778316689335.jpg",
+      "https://guntop2222-source.github.io/company-homepage/img/uploads/1778316697210.jpg",
+      "https://guntop2222-source.github.io/company-homepage/img/uploads/handel_3_1778315094983.jpg",
+      "",
+      "",
+      ""
+    ],
+    "youtubeUrl": ""
+  }
+}
