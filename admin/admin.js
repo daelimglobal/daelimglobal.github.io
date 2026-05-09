@@ -1283,7 +1283,7 @@ async function uploadImageToGitHub(file) {
   const token  = (localStorage.getItem('dg_gh_token')  || '').trim();
   const branch = (localStorage.getItem('dg_gh_branch') || 'gh-pages').trim();
   const repo   = detectRepo() || (localStorage.getItem('dg_gh_repo') || '').trim();
-  if (!token || !repo) return null;
+  if (!token || !repo) return { url: null, error: '토큰 또는 저장소 미설정' };
 
   const base64 = await new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1306,10 +1306,14 @@ async function uploadImageToGitHub(file) {
       },
       body: JSON.stringify({ message: '헨델 이미지 업로드', content: base64, branch }),
     });
-    if (!putResp.ok) return null;
+    if (!putResp.ok) {
+      let msg = `HTTP ${putResp.status}`;
+      try { const e = await putResp.json(); msg += ': ' + (e.message || ''); } catch(_) {}
+      return { url: null, error: msg };
+    }
     const [user, repoName] = repo.split('/');
-    return `https://${user}.github.io/${repoName}/${path}`;
-  } catch(e) { return null; }
+    return { url: `https://${user}.github.io/${repoName}/${path}`, error: null };
+  } catch(e) { return { url: null, error: e.message || '네트워크 오류' }; }
 }
 
 async function handleHandelFileUpload(file, idx) {
@@ -1338,7 +1342,7 @@ async function handleHandelFileUpload(file, idx) {
     return;
   }
 
-  const url = await uploadImageToGitHub(file);
+  const { url, error } = await uploadImageToGitHub(file);
   URL.revokeObjectURL(objectUrl);
 
   if (url) {
@@ -1346,13 +1350,20 @@ async function handleHandelFileUpload(file, idx) {
     setPreview('bh-preview-' + idx, url);
     if (statusEl) { statusEl.style.color = '#3D6B4F'; statusEl.textContent = '✅ 업로드 완료 (GitHub 반영 중)'; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000); }
   } else {
-    const reader = new FileReader();
-    reader.onload = e => {
-      if (hidden) hidden.value = e.target.result;
-      setPreview('bh-preview-' + idx, e.target.result);
-      if (statusEl) { statusEl.style.color = '#e05252'; statusEl.textContent = '❌ GitHub 업로드 실패 — 이 기기에만 저장됨'; }
-    };
-    reader.readAsDataURL(file);
+    setPreview('bh-preview-' + idx, '');
+    if (hidden) hidden.value = '';
+    if (statusEl) {
+      statusEl.style.color = '#e05252';
+      if (error && error.includes('401')) {
+        statusEl.textContent = '❌ 토큰 인증 실패 (401) — 기본설정에서 토큰을 새로 발급해 다시 저장해주세요.';
+      } else if (error && error.includes('403')) {
+        statusEl.textContent = '❌ 권한 없음 (403) — 토큰에 repo(Contents write) 권한이 필요합니다.';
+      } else if (error && error.includes('404')) {
+        statusEl.textContent = '❌ 저장소를 찾을 수 없음 (404) — 기본설정의 저장소명을 확인해주세요.';
+      } else {
+        statusEl.textContent = `❌ 업로드 실패: ${error || '알 수 없는 오류'} — 기본설정 탭에서 토큰·브랜치를 확인해주세요.`;
+      }
+    }
   }
 }
 
@@ -1420,7 +1431,7 @@ async function handlePortfolioFileUpload(file, num) {
     return;
   }
 
-  const url = await uploadImageToGitHub(file);
+  const { url, error } = await uploadImageToGitHub(file);
   URL.revokeObjectURL(objectUrl);
 
   if (url) {
@@ -1428,13 +1439,18 @@ async function handlePortfolioFileUpload(file, num) {
     setPreview(previewId, url);
     if (statusEl) { statusEl.style.color = '#3D6B4F'; statusEl.textContent = '✅ 업로드 완료'; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000); }
   } else {
-    const reader = new FileReader();
-    reader.onload = e => {
-      set(hiddenId, e.target.result);
-      setPreview(previewId, e.target.result);
-      if (statusEl) { statusEl.style.color = '#e05252'; statusEl.textContent = '❌ GitHub 업로드 실패 — 이 기기에만 저장됨'; }
-    };
-    reader.readAsDataURL(file);
+    set(hiddenId, '');
+    setPreview(previewId, '');
+    if (statusEl) {
+      statusEl.style.color = '#e05252';
+      if (error && error.includes('401')) {
+        statusEl.textContent = '❌ 토큰 인증 실패 (401) — 기본설정에서 토큰을 새로 발급해 다시 저장해주세요.';
+      } else if (error && error.includes('403')) {
+        statusEl.textContent = '❌ 권한 없음 (403) — 토큰에 repo(Contents write) 권한이 필요합니다.';
+      } else {
+        statusEl.textContent = `❌ 업로드 실패: ${error || '알 수 없는 오류'}`;
+      }
+    }
   }
 }
 
