@@ -1343,13 +1343,14 @@ async function handleHandelFileUpload(file, idx) {
   }
 
   const { url, error } = await uploadImageToGitHub(file);
-  URL.revokeObjectURL(objectUrl);
 
   if (url) {
     if (hidden) hidden.value = url;
-    setPreview('bh-preview-' + idx, url);
+    /* objectUrl은 GitHub Pages 배포 전까지 미리보기에 유지 (1분 후 해제) */
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
     if (statusEl) { statusEl.style.color = '#3D6B4F'; statusEl.textContent = '✅ 업로드 완료 (GitHub 반영 중)'; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000); }
   } else {
+    URL.revokeObjectURL(objectUrl);
     setPreview('bh-preview-' + idx, '');
     if (hidden) hidden.value = '';
     if (statusEl) {
@@ -1432,13 +1433,13 @@ async function handlePortfolioFileUpload(file, num) {
   }
 
   const { url, error } = await uploadImageToGitHub(file);
-  URL.revokeObjectURL(objectUrl);
 
   if (url) {
     set(hiddenId, url);
-    setPreview(previewId, url);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
     if (statusEl) { statusEl.style.color = '#3D6B4F'; statusEl.textContent = '✅ 업로드 완료'; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000); }
   } else {
+    URL.revokeObjectURL(objectUrl);
     set(hiddenId, '');
     setPreview(previewId, '');
     if (statusEl) {
