@@ -103,7 +103,12 @@ function detectRepo() {
   if (h.endsWith('.github.io')) {
     const user = h.replace('.github.io', '');
     const parts = window.location.pathname.split('/').filter(Boolean);
-    return parts.length ? `${user}/${parts[0]}` : '';
+    // User pages (e.g. daelimglobal.github.io): 경로 첫 세그먼트가 없거나 'admin'이면 user pages
+    if (!parts.length || parts[0] === 'admin') {
+      return `${user}/${user}.github.io`;
+    }
+    // Project pages (e.g. guntop2222-source.github.io/company-homepage/)
+    return `${user}/${parts[0]}`;
   }
   return localStorage.getItem('dg_gh_repo') || '';
 }
@@ -1312,7 +1317,9 @@ async function uploadImageToGitHub(file) {
       return { url: null, error: msg };
     }
     const [user, repoName] = repo.split('/');
-    return { url: `https://${user}.github.io/${repoName}/${path}`, error: null };
+    // User pages repo ({user}.github.io)는 subdirectory 없이 root에서 서빙
+    const basePath = repoName === `${user}.github.io` ? '' : `/${repoName}`;
+    return { url: `https://${user}.github.io${basePath}/${path}`, error: null };
   } catch(e) { return { url: null, error: e.message || '네트워크 오류' }; }
 }
 
