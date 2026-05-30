@@ -45,12 +45,12 @@ if (testGhBtn) {
   testGhBtn.addEventListener('click', async () => {
     const msgEl = document.getElementById('ghCommitMsg');
     if (msgEl) { msgEl.style.color = '#888'; msgEl.textContent = '📤 GitHub에 저장 중...'; }
-    const ok = await commitContentToGitHub();
+    const result = await commitContentToGitHub();
     if (msgEl) {
-      msgEl.style.color = ok ? '#3D6B4F' : '#e05252';
-      msgEl.textContent = ok
+      msgEl.style.color = result.ok ? '#3D6B4F' : '#e05252';
+      msgEl.textContent = result.ok
         ? '✅ 성공! 1~2분 후 모든 기기에 반영됩니다.'
-        : '❌ 실패 — 토큰과 브랜치명을 다시 확인해주세요.';
+        : `❌ 실패 — ${result.error || '토큰과 브랜치명을 다시 확인해주세요.'}`;
     }
   });
 }
@@ -117,25 +117,28 @@ async function commitContentToGitHub() {
   const token  = (localStorage.getItem('dg_gh_token')  || '').trim();
   const branch = (localStorage.getItem('dg_gh_branch') || 'gh-pages').trim();
   const repo   = detectRepo() || (localStorage.getItem('dg_gh_repo') || '').trim();
-  if (!token || !repo) return false;
+  if (!token || !repo) return { ok: false, error: '토큰 또는 저장소가 설정되지 않았습니다.' };
 
-  const apiUrl = `https://api.github.com/repos/${repo}/contents/content.json`;
+  const base = `https://api.github.com/repos/${repo}`;
+  const gh = (url, opts = {}) => fetch(url, {
+    ...opts,
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  });
 
   try {
-    let sha = null;
+    /* 1. 현재 content.json 내용 가져오기 (Contents API — 1MB 미만이면 OK) */
     let baseContent = {};
-    const getResp = await fetch(`${apiUrl}?ref=${branch}`, {
-      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
-    });
+    const getResp = await gh(`${base}/contents/content.json?ref=${branch}`);
     if (getResp.ok) {
       const fileData = await getResp.json();
-      sha = fileData.sha;
-      try {
-        baseContent = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, '')))));
-      } catch(e) {}
+      try { baseContent = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, ''))))); } catch(e) {}
+    } else if (getResp.status === 403 || getResp.status === 404) {
+      /* 파일이 너무 크거나 없음 — Raw API로 시도 */
+      const rawResp = await fetch(`https://raw.githubusercontent.com/${repo}/${branch}/content.json`, { cache: 'no-store' });
+      if (rawResp.ok) { try { baseContent = await rawResp.json(); } catch(e) {} }
     }
 
-    /* GitHub 기존 데이터를 베이스로, localStorage에 저장된 키만 덮어씀 */
+    /* 2. localStorage 데이터로 덮어쓰기 */
     const content = Object.assign({}, baseContent);
     ['portfolio','social','videos','info','customText','images','beethoven'].forEach(k => {
       const v = localStorage.getItem('dg_' + k);
@@ -143,17 +146,61 @@ async function commitContentToGitHub() {
     });
 
     const jsonStr = JSON.stringify(content, null, 2);
-    const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
-    const body = { message: '관리자 콘텐츠 업데이트', content: encoded, branch };
-    if (sha) body.sha = sha;
 
-    const putResp = await fetch(apiUrl, {
-      method: 'PUT',
-      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+    /* 3. Git Data API로 커밋 (파일 크기 제한 없음) */
+    /* 3a. 현재 브랜치 ref */
+    const refResp = await gh(`${base}/git/refs/heads/${branch}`);
+    if (!refResp.ok) {
+      const err = await refResp.json().catch(() => ({}));
+      return { ok: false, error: `브랜치 조회 실패 (${refResp.status}): ${err.message || ''}` };
+    }
+    const refData = await refResp.json();
+    const latestCommitSha = refData.object.sha;
+
+    /* 3b. 현재 커밋의 트리 SHA */
+    const commitResp = await gh(`${base}/git/commits/${latestCommitSha}`);
+    if (!commitResp.ok) return { ok: false, error: `커밋 조회 실패 (${commitResp.status})` };
+    const commitData = await commitResp.json();
+    const baseTreeSha = commitData.tree.sha;
+
+    /* 3c. content.json blob 생성 */
+    const blobResp = await gh(`${base}/git/blobs`, {
+      method: 'POST',
+      body: JSON.stringify({ content: jsonStr, encoding: 'utf-8' })
     });
-    return putResp.ok;
-  } catch(e) { return false; }
+    if (!blobResp.ok) {
+      const err = await blobResp.json().catch(() => ({}));
+      return { ok: false, error: `블롭 생성 실패 (${blobResp.status}): ${err.message || ''}` };
+    }
+    const blobData = await blobResp.json();
+
+    /* 3d. 새 트리 생성 */
+    const treeResp = await gh(`${base}/git/trees`, {
+      method: 'POST',
+      body: JSON.stringify({ base_tree: baseTreeSha, tree: [{ path: 'content.json', mode: '100644', type: 'blob', sha: blobData.sha }] })
+    });
+    if (!treeResp.ok) return { ok: false, error: `트리 생성 실패 (${treeResp.status})` };
+    const treeData = await treeResp.json();
+
+    /* 3e. 새 커밋 생성 */
+    const newCommitResp = await gh(`${base}/git/commits`, {
+      method: 'POST',
+      body: JSON.stringify({ message: '관리자 콘텐츠 업데이트', tree: treeData.sha, parents: [latestCommitSha] })
+    });
+    if (!newCommitResp.ok) return { ok: false, error: `커밋 생성 실패 (${newCommitResp.status})` };
+    const newCommitData = await newCommitResp.json();
+
+    /* 3f. ref 업데이트 */
+    const updateRefResp = await gh(`${base}/git/refs/heads/${branch}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ sha: newCommitData.sha })
+    });
+    if (!updateRefResp.ok) {
+      const err = await updateRefResp.json().catch(() => ({}));
+      return { ok: false, error: `ref 업데이트 실패 (${updateRefResp.status}): ${err.message || ''}` };
+    }
+    return { ok: true, error: null };
+  } catch(e) { return { ok: false, error: e.message || String(e) }; }
 }
 
 let _commitTimer = null;
@@ -167,16 +214,16 @@ function scheduleGitHubCommit() {
   showSaved('📤 저장 중...');
   _commitTimer = setTimeout(async () => {
     const msgEl = document.getElementById('ghCommitMsg');
-    const ok = await commitContentToGitHub();
-    const msg = ok
+    const result = await commitContentToGitHub();
+    const msg = result.ok
       ? '✅ 모든 기기에 반영됨'
-      : '❌ GitHub 동기화 실패 — 기본설정 탭에서 토큰 확인';
+      : `❌ GitHub 동기화 실패 — ${result.error || '기본설정 탭에서 토큰 확인'}`;
     showSaved(msg);
     if (msgEl) {
-      msgEl.style.color = ok ? '#3D6B4F' : '#e05252';
-      msgEl.textContent = ok
+      msgEl.style.color = result.ok ? '#3D6B4F' : '#e05252';
+      msgEl.textContent = result.ok
         ? '✅ 모든 기기에 반영됨 (1~2분 내 적용)'
-        : '❌ GitHub 저장 실패 — 토큰·브랜치를 확인해주세요';
+        : `❌ GitHub 저장 실패 — ${result.error || '토큰·브랜치를 확인해주세요'}`;
       setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 6000);
     }
   }, 2000);
