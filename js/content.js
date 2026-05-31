@@ -116,24 +116,24 @@ function renderSocial() {
     }
   }
 
-  const rest = items.slice(1, 4);
-  if (!rest.length) { grid.innerHTML = ''; return; }
-  grid.innerHTML = rest.map(a => {
+  grid.innerHTML = items.map(a => {
     const extraPhotos = [a.photo2, a.photo3].filter(Boolean);
     const ytBtn = a.youtubeUrl ? `<a href="${a.youtubeUrl}" target="_blank" rel="noopener" class="social-yt-btn">▶ 영상 보기</a>` : '';
     const gallery = extraPhotos.length ? `<div class="social-card-gallery">${extraPhotos.map(src => `<img src="${src}" alt="활동 사진" loading="lazy">`).join('')}</div>` : '';
+    const imgHtml = a.img ? `<div class="activity-card-img"><img src="${a.img}" alt="${a.title || ''}" loading="lazy"></div>` : '';
+    const tagHtml = a.tag ? `<span class="activity-card-tag">${a.tag}</span>` : '';
+    const titleHtml = a.title ? `<h3>${a.title}</h3>` : '';
+    const descHtml = a.desc ? `<p>${a.desc}</p>` : '';
     return `
     <div class="activity-card reveal">
-      <div class="activity-card-img">
-        <img src="${a.img}" alt="${a.title}" loading="lazy">
-      </div>
+      ${imgHtml}
       <div class="activity-card-body">
-        <span class="activity-card-tag">${a.tag}</span>
-        <h3>${a.title}</h3>
-        <p>${a.desc}</p>
+        ${tagHtml}
+        ${titleHtml}
+        ${descHtml}
         ${gallery}
         <div class="social-card-footer">
-          <span class="activity-card-date">${a.date}</span>
+          <span class="activity-card-date">${a.date || ''}</span>
           ${ytBtn}
         </div>
       </div>
