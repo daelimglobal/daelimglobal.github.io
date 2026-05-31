@@ -119,8 +119,10 @@ function renderSocial() {
   grid.innerHTML = items.map(a => {
     const extraPhotos = [a.photo2, a.photo3].filter(Boolean);
     const ytBtn = a.youtubeUrl ? `<a href="${a.youtubeUrl}" target="_blank" rel="noopener" class="social-yt-btn">▶ 영상 보기</a>` : '';
-    const gallery = extraPhotos.length ? `<div class="social-card-gallery">${extraPhotos.map(src => `<img src="${src}" alt="활동 사진" loading="lazy">`).join('')}</div>` : '';
-    const imgHtml = a.img ? `<div class="activity-card-img"><img src="${a.img}" alt="${a.title || ''}" loading="lazy"></div>` : '';
+    const validPhotos = extraPhotos.filter(s => s && !s.startsWith('file://'));
+    const gallery = validPhotos.length ? `<div class="social-card-gallery">${validPhotos.map(src => `<img src="${src}" alt="" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>` : '';
+    const mainImg = a.img && !a.img.startsWith('file://') ? a.img : '';
+    const imgHtml = mainImg ? `<div class="activity-card-img"><img src="${mainImg}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : '';
     const tagHtml = a.tag ? `<span class="activity-card-tag">${a.tag}</span>` : '';
     const titleHtml = a.title ? `<h3>${a.title}</h3>` : '';
     const descHtml = a.desc ? `<p>${a.desc}</p>` : '';
