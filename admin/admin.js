@@ -1328,6 +1328,28 @@ setupFileUpload('pf');
 setupFileUpload('sf');
 setupFileUpload('ab');
 
+/* 사회공헌 사진 2, 3 파일 업로드 (final/preview ID가 다른 패턴) */
+function setupFileUploadExtra(fileInputId, finalId, previewId) {
+  const fileInput = document.getElementById(fileInputId);
+  if (!fileInput) return;
+  const handleFile = file => {
+    if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) { alert('파일 크기가 5MB를 초과합니다.'); return; }
+    const reader = new FileReader();
+    reader.onload = e => { set(finalId, e.target.result); setPreview(previewId, e.target.result); };
+    reader.readAsDataURL(file);
+  };
+  fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+  const dropZone = fileInput.closest('.img-drop-zone');
+  if (dropZone) {
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+  }
+}
+setupFileUploadExtra('sf-file2', 'sf-img2-final', 'sf-preview2');
+setupFileUploadExtra('sf-file3', 'sf-img3-final', 'sf-preview3');
+
 /* ==========================================
    헨델프로젝트 이미지 파일 업로드
    ========================================== */
