@@ -950,14 +950,14 @@ function editSocial(id) {
 document.getElementById('saveSocialBtn').addEventListener('click', () => {
   const tag   = val('sf-tag');
   const title = val('sf-title');
-  if (!tag || !title) { alert('태그와 제목은 필수입니다.'); return; }
   let items = load('social', DEFAULT_SOCIAL);
   const editId = val('sf-edit-id');
   const item = {
     id:         editId ? parseInt(editId) : Date.now(),
-    tag, title,
-    desc:       val('sf-desc'),
-    img:        val('sf-img-final')  || 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600&q=80',
+    tag:        tag   || '',
+    title:      title || '',
+    desc:       val('sf-desc') || '',
+    img:        val('sf-img-final')  || '',
     photo2:     val('sf-img2-final') || '',
     photo3:     val('sf-img3-final') || '',
     youtubeUrl: val('sf-youtube-url') || '',
