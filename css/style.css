@@ -356,7 +356,7 @@ input, textarea, select, button { font-family: inherit; }
 
 .social-header { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-bottom: 64px; }
 
-.social-lead { font-size: 16px; color: var(--text-md); line-height: 1.8; margin-bottom: 32px; }
+.social-lead { font-size: 16px; color: var(--text-md); line-height: 1.8; margin-bottom: 32px; word-break: keep-all; }
 .social-stats-row { display: flex; gap: 32px; margin-bottom: 32px; }
 .ss-item { text-align: center; }
 .ss-item strong {
