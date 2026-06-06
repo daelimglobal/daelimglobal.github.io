@@ -100,6 +100,9 @@ function load(key, fallback) {
 /* ── GitHub content.json 동기화 (모든 기기 공유 핵심) ── */
 function detectRepo() {
   const h = window.location.hostname;
+  if (h === 'daelimglobal.co.kr' || h === 'www.daelimglobal.co.kr') {
+    return 'daelimglobal/daelimglobal.github.io';
+  }
   if (h.endsWith('.github.io')) {
     const user = h.replace('.github.io', '');
     const parts = window.location.pathname.split('/').filter(Boolean);
