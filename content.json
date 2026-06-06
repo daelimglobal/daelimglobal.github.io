@@ -1,1 +1,1 @@
-PLACEHOLDER_WILL_FAIL
+$(cat /tmp/restored_content.json)
