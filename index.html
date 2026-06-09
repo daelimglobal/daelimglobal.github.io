@@ -358,5 +358,21 @@
 
 <script src="js/content.js?v=2"></script>
 <script src="js/main.js"></script>
+<script>
+(function() {
+  try {
+    var g = (window.DG_CONFIG && window.DG_CONFIG.gasUrl) || '';
+    if (!g) return;
+    var td = new Date().toISOString().slice(0, 10);
+    var lv = localStorage.getItem('dg_lv');
+    var isNew = (lv !== td) ? '1' : '0';
+    localStorage.setItem('dg_lv', td);
+    var ua = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+    var ref = 'direct';
+    try { if (document.referrer) ref = new URL(document.referrer).hostname; } catch(e) {}
+    fetch(g + '?action=pageview&ua=' + ua + '&ref=' + encodeURIComponent(ref) + '&new=' + isNew + '&t=' + Date.now(), { mode: 'no-cors' }).catch(function() {});
+  } catch(e) {}
+})();
+</script>
 </body>
 </html>
