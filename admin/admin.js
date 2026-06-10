@@ -1639,7 +1639,22 @@ async function loadVisitorStats() {
   }
 }
 
-function _renderVisitorStats(stats) {
+function _renderVisitorStats(rawStats) {
+  /* GAS가 날짜 셀을 Date 객체로 반환할 때 yyyy-MM-dd 로 정규화 */
+  const stats = {};
+  Object.entries(rawStats).forEach(([k, v]) => {
+    let key = k;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) {
+      try { const d = new Date(k); if (!isNaN(d)) key = d.toISOString().slice(0, 10); } catch(e) {}
+    }
+    if (stats[key]) {
+      stats[key].total += v.total||0; stats[key].mobile += v.mobile||0;
+      stats[key].desktop += v.desktop||0; stats[key].new += v.new||0;
+    } else {
+      stats[key] = { total: v.total||0, mobile: v.mobile||0, desktop: v.desktop||0, new: v.new||0 };
+    }
+  });
+
   const todayStr = new Date().toISOString().slice(0, 10);
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const todayData = stats[todayStr] || { total: 0, mobile: 0, desktop: 0, new: 0 };
@@ -1687,8 +1702,10 @@ function _renderVisitorStats(stats) {
   const entries = Object.entries(stats).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 30);
   const rows = entries.map(([date, d]) => {
     const isToday = date === todayStr;
+    const [y, mo, dy] = date.split('-');
+    const displayDate = `${y}년 ${parseInt(mo)}월 ${parseInt(dy)}일`;
     return `<tr style="border-bottom:1px solid #eee;${isToday ? 'background:#fffbf3' : ''}">
-      <td style="padding:8px 12px;font-weight:${isToday ? '700' : '400'}">${date}${isToday ? ' <span style="color:#C9A96E;font-size:11px">오늘</span>' : ''}</td>
+      <td style="padding:8px 12px;font-weight:${isToday ? '700' : '400'}">${displayDate}${isToday ? ' <span style="color:#C9A96E;font-size:11px">오늘</span>' : ''}</td>
       <td style="padding:8px 12px;text-align:center;font-weight:600">${d.total}</td>
       <td style="padding:8px 12px;text-align:center;color:#3D6B4F">${d.new}</td>
       <td style="padding:8px 12px;text-align:center">📱 ${d.mobile}</td>
