@@ -53,6 +53,7 @@
     <nav class="sb-nav">
       <button class="sb-item active" data-tab="dashboard">📊 대시보드</button>
       <button class="sb-item sb-item-inquiry" data-tab="inquiries">📋 상담 신청 내역 <span class="sb-badge" id="sbBadge" style="display:none"></span></button>
+      <button class="sb-item" data-tab="visitors">👥 방문자 통계</button>
       <button class="sb-item" data-tab="images">🖼️ 이미지 관리</button>
       <button class="sb-item" data-tab="handel">🏛️ 헨델프로젝트 이미지</button>
       <button class="sb-item" data-tab="portfolio">🏠 시공사례 관리</button>
@@ -76,6 +77,162 @@
       <div class="topbar-right">
         <span id="saveStatus" class="save-status"></span>
         <a href="../" target="_blank" class="btn-sm btn-outline">홈페이지 보기</a>
+      </div>
+    </div>
+
+    <!-- ─── 방문자 통계 ─── -->
+    <div id="tab-visitors" class="tab-content">
+      <div id="vis-no-gas" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:16px 20px;margin-bottom:20px;gap:12px;align-items:flex-start">
+        <div style="font-size:24px">⚠️</div>
+        <div>
+          <strong>Google Apps Script 연동이 필요합니다</strong>
+          <p style="margin:6px 0 10px;color:#666;font-size:13px">방문자 통계는 Google 스프레드시트와 연동 후 수집됩니다.<br>기본 설정 탭에서 GAS URL을 설정하고, 아래 안내대로 Apps Script 코드를 업데이트해 주세요.</p>
+          <button class="btn-primary btn-sm" onclick="document.querySelector('[data-tab=settings]').click()">⚙️ 기본 설정으로 이동</button>
+        </div>
+      </div>
+
+      <!-- 요약 카드 -->
+      <div class="dash-cards">
+        <div class="dash-card">
+          <div class="dc-icon">📅</div>
+          <div><strong id="vis-today">-</strong><span>오늘 방문</span></div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-icon">📆</div>
+          <div><strong id="vis-yesterday">-</strong><span>어제 방문</span></div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-icon">📊</div>
+          <div><strong id="vis-week">-</strong><span>이번 주 합계</span></div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-icon">📱</div>
+          <div><strong id="vis-mobile">-</strong><span>모바일 비율</span></div>
+        </div>
+        <div class="dash-card">
+          <div class="dc-icon">🆕</div>
+          <div><strong id="vis-new">-</strong><span>오늘 신규</span></div>
+        </div>
+      </div>
+
+      <!-- 7일 바 차트 -->
+      <div class="settings-block full" style="margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="margin:0">📈 최근 7일 방문자 추이</h3>
+          <button class="btn-sm btn-outline" onclick="loadVisitorStats()">🔄 새로고침</button>
+        </div>
+        <div id="vis-chart" style="display:flex;align-items:flex-end;gap:6px;height:180px;padding:10px 0 0;border-bottom:2px solid #eee;margin-bottom:8px">
+          <div style="text-align:center;color:#aaa;font-size:13px;width:100%;padding:60px 0">⏳ 로딩 중...</div>
+        </div>
+      </div>
+
+      <!-- 날짜별 상세 -->
+      <div class="settings-block full" style="margin-top:20px">
+        <h3>📋 날짜별 방문자 내역 (최근 30일)</h3>
+        <div id="vis-detail" style="overflow-x:auto;margin-top:12px">
+          <div style="text-align:center;color:#aaa;font-size:13px;padding:30px">로딩 중...</div>
+        </div>
+      </div>
+
+      <!-- GAS 코드 업데이트 안내 -->
+      <div class="settings-block full" style="margin-top:20px;border-top:3px solid #FF9800">
+        <h3>🔧 Apps Script 코드 업데이트 필요</h3>
+        <p style="font-size:13px;color:#555;margin-bottom:12px">방문자 수집을 시작하려면 기존 Google Apps Script 코드를 아래 새 코드로 교체하고 재배포해야 합니다.</p>
+        <button class="btn-sm btn-outline" onclick="document.getElementById('visGasBlock').style.display=document.getElementById('visGasBlock').style.display==='none'?'block':'none'">📋 업데이트된 Apps Script 코드 보기</button>
+        <div id="visGasBlock" style="display:none;margin-top:10px;position:relative">
+          <button onclick="copyVisGasCode()" class="btn-sm btn-outline" style="position:absolute;top:8px;right:8px;z-index:1">복사</button>
+          <pre id="visGasCode" style="background:#1e1e2e;color:#cdd6f4;padding:14px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.6;white-space:pre">const SS = '상담신청';
+const CT = '콘텐츠';
+const VS = '방문자';
+
+function doGet(e) {
+  var p = e.parameter, ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  if (p.action === 'write') {
+    var sh = ss.getSheetByName(SS) || ss.insertSheet(SS);
+    if (sh.getLastRow() === 0)
+      sh.appendRow(['신청시각','성함','연락처','부지지역','희망평형','예상예산','문의내용','상태']);
+    sh.appendRow([p['신청시각']||'',p['성함']||'',p['연락처']||'',p['부지지역']||'',
+                  p['희망평형']||'',p['예상예산']||'',p['문의내용']||'','미확인']);
+    var r = JSON.stringify({success:true});
+    return ContentService.createTextOutput(p.callback?p.callback+'('+r+')':r)
+      .setMimeType(p.callback?ContentService.MimeType.JAVASCRIPT:ContentService.MimeType.JSON);
+  }
+
+  if (p.action === 'pageview') {
+    var vsh = ss.getSheetByName(VS) || ss.insertSheet(VS);
+    if (vsh.getLastRow() === 0)
+      vsh.appendRow(['날짜','시각','기기','유입경로','신규여부']);
+    var now = new Date();
+    var dateStr = Utilities.formatDate(now,'Asia/Seoul','yyyy-MM-dd');
+    var timeStr = Utilities.formatDate(now,'Asia/Seoul','HH:mm');
+    vsh.appendRow([dateStr,timeStr,p.ua||'unknown',p.ref||'direct',p.new==='1'?'신규':'재방문']);
+    return ContentService.createTextOutput('ok');
+  }
+
+  if (p.action === 'read_visitors') {
+    var vsh = ss.getSheetByName(VS);
+    var statsObj = {};
+    if (vsh && vsh.getLastRow() > 1) {
+      var rows = vsh.getDataRange().getValues();
+      for (var i = 1; i < rows.length; i++) {
+        var d = String(rows[i][0]); if (!d) continue;
+        if (!statsObj[d]) statsObj[d] = {total:0,mobile:0,desktop:0,'new':0};
+        statsObj[d].total++;
+        if (rows[i][2]==='mobile') statsObj[d].mobile++;
+        else statsObj[d].desktop++;
+        if (rows[i][4]==='신규') statsObj[d]['new']++;
+      }
+    }
+    var json = JSON.stringify(statsObj);
+    return ContentService.createTextOutput(p.callback?p.callback+'('+json+')':json)
+      .setMimeType(p.callback?ContentService.MimeType.JAVASCRIPT:ContentService.MimeType.JSON);
+  }
+
+  if (p.action === 'read_content') {
+    var csh = ss.getSheetByName(CT); var obj = {};
+    if (csh && csh.getLastRow() > 1) {
+      var rows = csh.getDataRange().getValues();
+      for (var i = 1; i < rows.length; i++) { if (rows[i][0]) obj[rows[i][0]] = rows[i][1]; }
+    }
+    var json = JSON.stringify(obj);
+    return ContentService.createTextOutput(p.callback?p.callback+'('+json+')':json)
+      .setMimeType(p.callback?ContentService.MimeType.JAVASCRIPT:ContentService.MimeType.JSON);
+  }
+
+  var sh = ss.getSheetByName(SS); var data = [];
+  if (sh && sh.getLastRow() > 1) {
+    var rows = sh.getDataRange().getValues(); var h = rows[0];
+    data = rows.slice(1).reverse().map(function(r,i){
+      var o={id:Date.now()-i}; h.forEach(function(k,j){o[k]=r[j];}); return o;
+    });
+  }
+  var json = JSON.stringify(data);
+  return ContentService.createTextOutput(p.callback?p.callback+'('+json+')':json)
+    .setMimeType(p.callback?ContentService.MimeType.JAVASCRIPT:ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var p = e.parameter, ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (p.action === 'write_content') {
+      var sh = ss.getSheetByName(CT) || ss.insertSheet(CT);
+      if (sh.getLastRow() === 0) sh.appendRow(['key','value','updated']);
+      var rowIdx = -1;
+      if (sh.getLastRow() > 1) {
+        var keys = sh.getRange(2,1,sh.getLastRow()-1,1).getValues();
+        for (var i = 0; i < keys.length; i++) { if (keys[i][0]===p.key){rowIdx=i+2;break;} }
+      }
+      var now = Utilities.formatDate(new Date(),'Asia/Seoul','yyyy-MM-dd HH:mm:ss');
+      if (rowIdx > 0) { sh.getRange(rowIdx,2).setValue(p.value); sh.getRange(rowIdx,3).setValue(now); }
+      else { sh.appendRow([p.key, p.value, now]); }
+      return ContentService.createTextOutput('ok');
+    }
+    return ContentService.createTextOutput('unknown');
+  } catch(err) { return ContentService.createTextOutput('err:'+err.message); }
+}</pre>
+        </div>
+        <p style="font-size:12px;color:#888;margin-top:10px">코드 교체 후: <b>배포 → 새 배포</b>가 아닌 <b>배포 → 기존 배포 관리 → ✏️ 편집 아이콘 → 버전: 새 버전</b>으로 업데이트해야 합니다.</p>
       </div>
     </div>
 
@@ -727,7 +884,7 @@
             <div class="email-step">
               <span class="email-step-num" style="background:#34A853">2</span>
               <div>
-                <strong>Apps Script 열기 → 코드 붙여넣기</strong>
+              <strong>Apps Script 열기 → 코드 붙여넣기</strong>
                 <p>메뉴 <b>확장 프로그램 → Apps Script</b> 클릭 → 아래 코드 전체를 복사해서 붙여넣기 → 💾 저장</p>
                 <button class="btn-sm btn-outline" style="margin-top:6px" onclick="document.getElementById('gasCodeBlock').style.display=document.getElementById('gasCodeBlock').style.display==='none'?'block':'none'">📋 코드 보기 / 숨기기</button>
                 <div id="gasCodeBlock" style="display:none;margin-top:10px;position:relative">
