@@ -382,7 +382,8 @@ document.querySelectorAll('.sb-item').forEach(btn => {
     document.getElementById('tab-' + tab).classList.add('active');
     if (tab === 'inquiries') renderInquiryList();
     if (tab === 'handel') loadBeethovenSettings();
-    const titles = { dashboard:'대시보드', inquiries:'상담 신청 내역', images:'이미지 관리', handel:'헨델프로젝트 이미지', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
+    if (tab === 'visitors') loadVisitorStats();
+    const titles = { dashboard:'대시보드', visitors:'방문자 통계', inquiries:'상담 신청 내역', images:'이미지 관리', handel:'헨델프로젝트 이미지', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
     document.getElementById('tabTitle').textContent = titles[tab] || tab;
   });
 });
@@ -1607,3 +1608,119 @@ window.closeForm = function(type) {
 function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 function set(id, v) { const el = document.getElementById(id); if (el) el.value = v || ''; }
 function clearForm(ids) { ids.forEach(id => set(id, '')); }
+
+/* ==========================================
+   방문자 통계 (Visitor Stats)
+   ========================================== */
+async function loadVisitorStats() {
+  const gasUrl = (localStorage.getItem('dg_gas_url') || (window.DG_CONFIG && window.DG_CONFIG.gasUrl) || '').trim();
+  const noGasEl = document.getElementById('vis-no-gas');
+  if (noGasEl) noGasEl.style.display = gasUrl ? 'none' : 'flex';
+  if (!gasUrl) return;
+
+  const chartEl = document.getElementById('vis-chart');
+  const detailEl = document.getElementById('vis-detail');
+  if (chartEl) chartEl.innerHTML = '<div style="text-align:center;color:#aaa;font-size:13px;width:100%;padding:60px 0">⏳ 데이터 로딩 중...</div>';
+
+  try {
+    const cbName = 'dg_vis_' + Date.now();
+    const data = await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      window[cbName] = (d) => { resolve(d || {}); delete window[cbName]; script.remove(); };
+      script.onerror = () => { reject(new Error('load error')); delete window[cbName]; script.remove(); };
+      script.src = gasUrl + '?action=read_visitors&callback=' + cbName + '&t=' + Date.now();
+      document.head.appendChild(script);
+      setTimeout(() => { if (window[cbName]) { reject(new Error('timeout')); delete window[cbName]; script.remove(); } }, 15000);
+    });
+    _renderVisitorStats(data);
+  } catch(e) {
+    if (chartEl) chartEl.innerHTML = `<div style="color:#e05252;font-size:13px;padding:20px;text-align:center">⚠️ 데이터 로드 실패. Apps Script 코드가 업데이트되었는지 확인해주세요.<br><button class="btn-sm btn-outline" style="margin-top:8px" onclick="loadVisitorStats()">🔄 다시 시도</button></div>`;
+    if (detailEl) detailEl.innerHTML = '';
+  }
+}
+
+function _renderVisitorStats(stats) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const todayData = stats[todayStr] || { total: 0, mobile: 0, desktop: 0, new: 0 };
+  const yestData  = stats[yesterdayStr] || { total: 0, mobile: 0, desktop: 0, new: 0 };
+
+  let weekTotal = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    weekTotal += (stats[d] || { total: 0 }).total;
+  }
+
+  const mobileRatio = todayData.total > 0 ? Math.round(todayData.mobile / todayData.total * 100) + '%' : '-';
+
+  const sv = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  sv('vis-today', todayData.total);
+  sv('vis-yesterday', yestData.total);
+  sv('vis-week', weekTotal);
+  sv('vis-mobile', mobileRatio);
+  sv('vis-new', todayData.new);
+
+  /* 7일 바 차트 */
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const ds = d.toISOString().slice(0, 10);
+    const label = (d.getMonth() + 1) + '/' + d.getDate();
+    const isToday = ds === todayStr;
+    days.push({ date: ds, label, count: (stats[ds] || { total: 0 }).total, isToday });
+  }
+  const maxCount = Math.max(...days.map(d => d.count), 1);
+  const chartEl = document.getElementById('vis-chart');
+  if (chartEl) {
+    chartEl.innerHTML = days.map(d => `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0">
+        <span style="font-size:12px;font-weight:600;color:#444">${d.count || ''}</span>
+        <div style="width:100%;background:${d.isToday ? '#C9A96E' : '#d4b896'};border-radius:4px 4px 0 0;height:${Math.max(Math.round(d.count / maxCount * 130), d.count > 0 ? 4 : 2)}px;transition:height 0.3s"></div>
+        <span style="font-size:11px;color:${d.isToday ? '#C9A96E' : '#888'};font-weight:${d.isToday ? '700' : '400'};white-space:nowrap">${d.label}</span>
+      </div>
+    `).join('');
+  }
+
+  /* 날짜별 테이블 */
+  const detailEl = document.getElementById('vis-detail');
+  if (!detailEl) return;
+  const entries = Object.entries(stats).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 30);
+  const rows = entries.map(([date, d]) => {
+    const isToday = date === todayStr;
+    return `<tr style="border-bottom:1px solid #eee;${isToday ? 'background:#fffbf3' : ''}">
+      <td style="padding:8px 12px;font-weight:${isToday ? '700' : '400'}">${date}${isToday ? ' <span style="color:#C9A96E;font-size:11px">오늘</span>' : ''}</td>
+      <td style="padding:8px 12px;text-align:center;font-weight:600">${d.total}</td>
+      <td style="padding:8px 12px;text-align:center;color:#3D6B4F">${d.new}</td>
+      <td style="padding:8px 12px;text-align:center">📱 ${d.mobile}</td>
+      <td style="padding:8px 12px;text-align:center">💻 ${d.desktop}</td>
+    </tr>`;
+  }).join('');
+  detailEl.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#f8f8f8;border-bottom:2px solid #eee">
+          <th style="padding:10px 12px;text-align:left;font-weight:600">날짜</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:600">방문</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:600;color:#3D6B4F">신규</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:600">모바일</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:600">데스크톱</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="5" style="padding:30px;text-align:center;color:#aaa">아직 방문 데이터가 없습니다.<br><small>홈페이지 방문 후 반영됩니다.</small></td></tr>'}</tbody>
+    </table>`;
+}
+
+window.copyVisGasCode = function() {
+  const code = document.getElementById('visGasCode');
+  if (!code) return;
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    showSaved('Apps Script 코드가 복사되었습니다 ✓');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = code.textContent;
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showSaved('코드가 복사되었습니다 ✓');
+  });
+};
