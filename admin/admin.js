@@ -1640,12 +1640,15 @@ async function loadVisitorStats() {
 }
 
 function _renderVisitorStats(rawStats) {
+  /* toISOString()은 UTC 반환 → KST(UTC+9) 자정이 전날로 표시되는 오차 방지용 로컬 날짜 헬퍼 */
+  const _ld = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+
   /* GAS가 날짜 셀을 Date 객체로 반환할 때 yyyy-MM-dd 로 정규화 */
   const stats = {};
   Object.entries(rawStats).forEach(([k, v]) => {
     let key = k;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) {
-      try { const d = new Date(k); if (!isNaN(d)) key = d.toISOString().slice(0, 10); } catch(e) {}
+      try { const d = new Date(k); if (!isNaN(d)) key = _ld(d); } catch(e) {}
     }
     if (stats[key]) {
       stats[key].total += v.total||0; stats[key].mobile += v.mobile||0;
@@ -1655,14 +1658,14 @@ function _renderVisitorStats(rawStats) {
     }
   });
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const todayStr = _ld(new Date());
+  const yesterdayStr = _ld(new Date(Date.now() - 86400000));
   const todayData = stats[todayStr] || { total: 0, mobile: 0, desktop: 0, new: 0 };
   const yestData  = stats[yesterdayStr] || { total: 0, mobile: 0, desktop: 0, new: 0 };
 
   let weekTotal = 0;
   for (let i = 0; i < 7; i++) {
-    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const d = _ld(new Date(Date.now() - i * 86400000));
     weekTotal += (stats[d] || { total: 0 }).total;
   }
 
@@ -1679,7 +1682,7 @@ function _renderVisitorStats(rawStats) {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
-    const ds = d.toISOString().slice(0, 10);
+    const ds = _ld(d);
     const label = (d.getMonth() + 1) + '/' + d.getDate();
     const isToday = ds === todayStr;
     days.push({ date: ds, label, count: (stats[ds] || { total: 0 }).total, isToday });
