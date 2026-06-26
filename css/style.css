@@ -650,7 +650,7 @@ input, textarea, select, button { font-family: inherit; }
 }
 .press-card-link:hover .press-card {
   border-color: #C9A96E;
-  box-shadow: 0 8px 40px rgba(201,169,110,0.15);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12);
 }
 .press-card-img {
   flex-shrink: 0; width: 340px;
