@@ -47,23 +47,30 @@
   <!-- 사이드바 -->
   <aside class="sidebar">
     <div class="sb-logo">
-      <div class="sb-emblem">대림</div>
-      <div><strong>대림글로벌</strong><span>관리자</span></div>
+      <div class="sb-emblem" id="sbEmblem">대림</div>
+      <div><strong id="sbCompanyName">대림글로벌</strong><span>관리자</span></div>
+    </div>
+    <div class="sb-company-switch" style="padding:0 20px 14px">
+      <label for="companySelect" style="display:block;font-size:11px;color:#999;margin-bottom:5px;letter-spacing:.03em">회사 선택</label>
+      <select id="companySelect" style="width:100%;padding:9px 10px;border-radius:8px;border:1px solid #333;background:#1c1c1c;color:#fff;font-size:13px;font-weight:600">
+        <option value="daelim">대림글로벌</option>
+        <option value="ebenezer">에벤에셀</option>
+      </select>
     </div>
     <nav class="sb-nav">
       <button class="sb-item active" data-tab="dashboard">📊 대시보드</button>
       <button class="sb-item sb-item-inquiry" data-tab="inquiries">📋 상담 신청 내역 <span class="sb-badge" id="sbBadge" style="display:none"></span></button>
       <button class="sb-item" data-tab="visitors">👥 방문자 통계</button>
       <button class="sb-item" data-tab="images">🖼️ 이미지 관리</button>
-      <button class="sb-item" data-tab="handel">🏛️ 헨델프로젝트 이미지</button>
+      <button class="sb-item" data-tab="handel" id="sbHandelTab">🏛️ 헨델프로젝트 이미지</button>
       <button class="sb-item" data-tab="portfolio">🏠 시공사례 관리</button>
-      <button class="sb-item" data-tab="social">🌱 사회공헌 관리</button>
+      <button class="sb-item" data-tab="social" id="sbSocialTab">🌱 사회공헌 관리</button>
       <button class="sb-item" data-tab="videos">🎬 동영상 관리</button>
       <button class="sb-item" data-tab="content">✏️ 텍스트 편집</button>
       <button class="sb-item" data-tab="settings">⚙️ 기본 설정</button>
     </nav>
     <div class="sb-bottom">
-      <a href="../" target="_blank" class="sb-preview">🔗 홈페이지 미리보기</a>
+      <a href="../" target="_blank" class="sb-preview" id="sbPreviewLink">🔗 홈페이지 미리보기</a>
       <button class="sb-logout" id="logoutBtn">로그아웃</button>
     </div>
   </aside>
@@ -76,7 +83,7 @@
       <h1 id="tabTitle">대시보드</h1>
       <div class="topbar-right">
         <span id="saveStatus" class="save-status"></span>
-        <a href="../" target="_blank" class="btn-sm btn-outline">홈페이지 보기</a>
+        <a href="../" target="_blank" class="btn-sm btn-outline" id="topPreviewLink">홈페이지 보기</a>
       </div>
     </div>
 
@@ -243,7 +250,7 @@ function doPost(e) {
           <div class="dc-icon">🏠</div>
           <div><strong id="dc-portfolio-count">0</strong><span>시공사례</span></div>
         </div>
-        <div class="dash-card">
+        <div class="dash-card" id="dashSocialCard">
           <div class="dc-icon">🌱</div>
           <div><strong id="dc-social-count">0</strong><span>사회공헌 활동</span></div>
         </div>
@@ -376,18 +383,18 @@ function doPost(e) {
         </div>
 
         <div class="settings-block full" style="border-top:3px solid #C9A96E;margin-top:24px;text-align:center;padding:24px">
-          <p style="color:#888;margin-bottom:12px">헨델프로젝트 섹션 이미지는 전용 메뉴에서 관리하세요.</p>
-          <button class="btn-primary" onclick="document.querySelector('[data-tab=handel]').click()">🏛️ 헨델프로젝트 이미지 관리하기 →</button>
+          <p style="color:#888;margin-bottom:12px" id="imgHandelNote">헨델프로젝트 섹션 이미지는 전용 메뉴에서 관리하세요.</p>
+          <button class="btn-primary" id="imgToHandelBtn" onclick="document.querySelector('[data-tab=handel]').click()">🏛️ 헨델프로젝트 이미지 관리하기 →</button>
         </div>
       </div>
     </div>
 
-    <!-- ─── 헨델프로젝트 이미지 ─── -->
+    <!-- ─── 헨델프로젝트(에벤에셀: 베토벤프로젝트) 이미지 ─── -->
     <div id="tab-handel" class="tab-content">
-      <div class="notice-box">🏛️ <strong>헨델프로젝트 이미지:</strong> 홈페이지 헨델프로젝트 섹션 내용 바로 아래에 표시되는 사진 최대 6장을 관리합니다. 저장 후 PC·모바일 모든 기기에 반영됩니다.</div>
+      <div class="notice-box" id="handelNotice">🏛️ <strong>헨델프로젝트 이미지:</strong> 홈페이지 헨델프로젝트 섹션 내용 바로 아래에 표시되는 사진 최대 6장을 관리합니다. 저장 후 PC·모바일 모든 기기에 반영됩니다.</div>
       <div class="settings-grid">
         <div class="settings-block full">
-          <h3>🏛️ 헨델프로젝트 소개 사진 (최대 6장)</h3>
+          <h3 id="handelSectionH3">🏛️ 헨델프로젝트 소개 사진 (최대 6장)</h3>
           <p class="settings-desc">사진을 클릭하거나 파일을 드래그하여 업로드하세요. GitHub 토큰이 설정된 경우 자동으로 서버에 업로드되어 <strong>PC·모바일 모두에서 표시</strong>됩니다.</p>
           <div id="handel-gh-warning" style="display:none;background:#fff3cd;border:1px solid #ffc107;padding:10px 14px;border-radius:8px;font-size:12px;color:#856404;margin-bottom:12px">
             ⚠️ GitHub 토큰이 설정되지 않아 이미지가 이 기기에서만 저장됩니다. <button class="btn-sm btn-outline" style="margin-left:8px" onclick="document.querySelector('[data-tab=settings]').click()">토큰 설정하기 →</button>
@@ -548,7 +555,7 @@ function doPost(e) {
         <div class="form-grid-2">
           <div class="fg"><label>지역명 *</label><input type="text" id="pf-title" placeholder="예: 경기도 양평"></div>
           <div class="fg"><label>평형 *</label><input type="text" id="pf-size" placeholder="예: 40평"></div>
-          <div class="fg"><label>타입</label><input type="text" id="pf-type" placeholder="예: 헨델 40"></div>
+          <div class="fg"><label>타입</label><input type="text" id="pf-type" placeholder="예: 베토벤 40"></div>
           <div class="fg"><label>스타일</label><input type="text" id="pf-style" placeholder="예: 모던 스타일"></div>
         </div>
 
@@ -754,11 +761,11 @@ function doPost(e) {
           <p style="font-size:13px;color:#666;margin-bottom:12px">헤더 및 모바일 메뉴에 표시되는 항목 이름을 수정합니다.</p>
           <div class="form-grid-2">
             <div class="fg"><label>회사소개</label><input type="text" id="ct-navAbout" placeholder="회사소개"></div>
-            <div class="fg"><label>헨델프로젝트</label><input type="text" id="ct-navBeethoven" placeholder="헨델프로젝트"></div>
+            <div class="fg"><label id="lblNavBeethoven">헨델프로젝트</label><input type="text" id="ct-navBeethoven" placeholder="헨델프로젝트"></div>
             <div class="fg"><label>서비스</label><input type="text" id="ct-navServices" placeholder="서비스"></div>
             <div class="fg"><label>건축과정</label><input type="text" id="ct-navProcess" placeholder="건축과정"></div>
             <div class="fg"><label>시공사례</label><input type="text" id="ct-navPortfolio" placeholder="시공사례"></div>
-            <div class="fg"><label>사회공헌</label><input type="text" id="ct-navSocial" placeholder="사회공헌"></div>
+            <div class="fg" id="fgNavSocial"><label>사회공헌</label><input type="text" id="ct-navSocial" placeholder="사회공헌"></div>
             <div class="fg"><label>상단 상담 버튼</label><input type="text" id="ct-navCta" placeholder="무료상담"></div>
           </div>
         </div>
@@ -791,7 +798,7 @@ function doPost(e) {
           <div class="fg"><label>상세 설명</label><textarea id="ct-aboutDesc" rows="3">15년의 풍부한 경험과 전문 건축팀을 바탕으로 고객 한 분 한 분의 꿈을 현실로 만들어 드립니다. 투명한 공사비와 합리적인 가격으로 누구나 부담 없이 고품격 주택을 가질 수 있도록, 전국 어디서나 최선을 다하고 있습니다.</textarea></div>
         </div>
 
-        <div class="cs-block green-block">
+        <div class="cs-block green-block" id="csSocialTextBlock">
           <h3>🌱 사회공헌 섹션 텍스트</h3>
           <div class="fg"><label>리드 문구</label><textarea id="ct-socialLead" rows="2">집 한 채가 가족의 행복을 바꿉니다.
 대림글로벌은 건축의 가치를 사회와 함께 나눕니다.</textarea></div>
@@ -862,7 +869,7 @@ function doPost(e) {
             <input type="text" id="s-gh-branch" placeholder="gh-pages" value="gh-pages">
           </div>
           <div class="fg">
-            <label>📦 GitHub 저장소 (자동감지)</label>
+            <label>📦 GitHub 저장소 (자동감지 — 사이드바에서 선택한 회사에 맞춰 자동 전환됩니다)</label>
             <input type="text" id="s-gh-repo" placeholder="username/repository" readonly style="background:#f5f5f5;color:#888">
           </div>
           <button class="btn-primary" id="saveGhBtn" style="margin-top:12px">🔄 동기화 설정 저장</button>
