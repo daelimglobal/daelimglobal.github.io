@@ -33,7 +33,7 @@ if (saveGhBtn) {
     const token  = (document.getElementById('s-gh-token').value  || '').trim();
     const branch = (document.getElementById('s-gh-branch').value || 'gh-pages').trim();
     const repo   = (document.getElementById('s-gh-repo').value   || '').trim();
-    localStorage.setItem('dg_gh_token',  token);
+    localStorage.setItem(ghTokenKey(),  token);
     localStorage.setItem('dg_gh_branch', branch);
     if (repo) localStorage.setItem('dg_gh_repo', repo);
     loadGitHubSettings();
@@ -103,6 +103,8 @@ function getActiveCompany() {
 }
 function setActiveCompany(c) { if (COMPANIES[c]) localStorage.setItem('dg_active_company', c); }
 function companyKeyPrefix() { return COMPANIES[getActiveCompany()].keyPrefix; }
+/* GitHub 토큰은 회사(=GitHub 계정)마다 다르므로 회사별로 별도 저장 */
+function ghTokenKey() { return 'dg_' + companyKeyPrefix() + 'gh_token'; }
 /* 대림글로벌은 기존 자동감지/수동설정 저장소를 그대로 사용, 에벤에셀은 전용 저장소로 고정 */
 function getActiveRepo() {
   const c = COMPANIES[getActiveCompany()];
@@ -151,7 +153,7 @@ function detectRepo() {
 }
 
 async function commitContentToGitHub() {
-  const token  = (localStorage.getItem('dg_gh_token')  || '').trim();
+  const token  = (localStorage.getItem(ghTokenKey())  || '').trim();
   const branch = getActiveBranch();
   const repo   = getActiveRepo();
   if (!token || !repo) return { ok: false, error: '토큰 또는 저장소가 설정되지 않았습니다.' };
@@ -243,7 +245,7 @@ async function commitContentToGitHub() {
 
 let _commitTimer = null;
 function scheduleGitHubCommit() {
-  const token = (localStorage.getItem('dg_gh_token') || '').trim();
+  const token = (localStorage.getItem(ghTokenKey()) || '').trim();
   if (!token) {
     showSaved('저장됨 (GitHub 토큰 미설정 — 기본설정 탭에서 토큰 입력 필요)');
     return;
@@ -286,12 +288,12 @@ function loadGitHubSettings() {
   const tokenEl  = document.getElementById('s-gh-token');
   const branchEl = document.getElementById('s-gh-branch');
   const repoEl   = document.getElementById('s-gh-repo');
-  if (tokenEl)  tokenEl.value  = localStorage.getItem('dg_gh_token')  || '';
+  if (tokenEl)  tokenEl.value  = localStorage.getItem(ghTokenKey())  || '';
   if (branchEl) branchEl.value = getActiveBranch();
   if (repoEl)   repoEl.value   = getActiveRepo();
   const badge = document.getElementById('gh-status-badge');
   if (badge) {
-    const hasToken = !!(localStorage.getItem('dg_gh_token') || '').trim();
+    const hasToken = !!(localStorage.getItem(ghTokenKey()) || '').trim();
     badge.textContent = hasToken ? '✓ 설정됨' : '미설정';
     badge.style.cssText = hasToken ? 'color:#3D6B4F;font-size:12px;font-weight:700;margin-left:6px' : 'color:#e05252;font-size:12px;margin-left:6px';
   }
@@ -347,7 +349,7 @@ document.getElementById('saveBeethovenBtn').addEventListener('click', async () =
   localStorage.setItem('dg_' + companyKeyPrefix() + 'beethoven', JSON.stringify(bData));
 
   const msgEl = document.getElementById('beethoven-save-msg');
-  const token = (localStorage.getItem('dg_gh_token') || '').trim();
+  const token = (localStorage.getItem(ghTokenKey()) || '').trim();
 
   if (!token) {
     if (msgEl) {
@@ -940,7 +942,7 @@ document.getElementById('addPortfolioBtn').addEventListener('click', () => {
   document.getElementById('portfolioFormTitle').textContent = '시공사례 추가';
   _pfClearForm();
   const warn = document.getElementById('pf-gh-warning');
-  if (warn) warn.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
+  if (warn) warn.style.display = (localStorage.getItem(ghTokenKey()) || '').trim() ? 'none' : 'block';
   document.getElementById('portfolioForm').style.display = 'block';
   document.getElementById('portfolioForm').scrollIntoView({ behavior:'smooth' });
 });
@@ -964,7 +966,7 @@ function editPortfolio(id) {
   setPreview('pf-preview-3', p.photo3   || '');
   setPreview('pf-preview-4', p.photo4   || '');
   const warn = document.getElementById('pf-gh-warning');
-  if (warn) warn.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
+  if (warn) warn.style.display = (localStorage.getItem(ghTokenKey()) || '').trim() ? 'none' : 'block';
   document.getElementById('portfolioForm').style.display = 'block';
   document.getElementById('portfolioForm').scrollIntoView({ behavior:'smooth' });
 }
@@ -1468,7 +1470,7 @@ setupFileUploadExtra('sf-file3', 'sf-img3-final', 'sf-preview3');
    헨델프로젝트 이미지 파일 업로드
    ========================================== */
 async function uploadImageToGitHub(file) {
-  const token  = (localStorage.getItem('dg_gh_token')  || '').trim();
+  const token  = (localStorage.getItem(ghTokenKey())  || '').trim();
   const branch = getActiveBranch();
   const repo   = getActiveRepo();
   if (!token || !repo) return { url: null, error: '토큰 또는 저장소 미설정' };
@@ -1518,7 +1520,7 @@ async function handleHandelFileUpload(file, idx) {
   setPreview('bh-preview-' + idx, objectUrl);
   if (statusEl) { statusEl.style.color = '#888'; statusEl.textContent = '📤 업로드 중...'; }
 
-  const token = (localStorage.getItem('dg_gh_token') || '').trim();
+  const token = (localStorage.getItem(ghTokenKey()) || '').trim();
 
   if (!token) {
     const reader = new FileReader();
@@ -1570,7 +1572,7 @@ window.clearHandelImg = function(idx) {
 
 function setupHandelUploads() {
   const warningEl = document.getElementById('handel-gh-warning');
-  if (warningEl) warningEl.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
+  if (warningEl) warningEl.style.display = (localStorage.getItem(ghTokenKey()) || '').trim() ? 'none' : 'block';
 
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(idx => {
     const fileInput = document.getElementById('handel-file-' + idx);
@@ -1608,7 +1610,7 @@ async function handlePortfolioFileUpload(file, num) {
   setPreview(previewId, objectUrl);
   if (statusEl) { statusEl.style.color = '#888'; statusEl.textContent = '📤 업로드 중...'; }
 
-  const token = (localStorage.getItem('dg_gh_token') || '').trim();
+  const token = (localStorage.getItem(ghTokenKey()) || '').trim();
 
   if (!token) {
     const reader = new FileReader();
