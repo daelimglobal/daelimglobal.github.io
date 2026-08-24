@@ -94,8 +94,8 @@ function getStoredPw() { return localStorage.getItem('dg_admin_pw') || DEFAULT_P
 const COMPANIES = {
   daelim:   { label: '대림글로벌', emblem: '대림', repo: null, branch: null, keyPrefix: '',
               previewUrl: '../', hasSocial: true, projectLabel: '헨델프로젝트' },
-  ebenezer: { label: '에벤에셀',   emblem: '에벤', repo: 'daelimglobal/ebenezer-homepage', branch: 'main', keyPrefix: 'eb_',
-              previewUrl: 'https://daelimglobal.github.io/ebenezer-homepage/', hasSocial: false, projectLabel: '베토벤프로젝트' }
+  ebenezer: { label: '에벤에셀',   emblem: '에벤', repo: 'ebenezer-homepage/ebenezer-homepage.github.io', branch: 'main', keyPrefix: 'eb_',
+              previewUrl: 'https://ebenezer-homepage.github.io/', hasSocial: false, projectLabel: '베토벤프로젝트' }
 };
 function getActiveCompany() {
   const c = localStorage.getItem('dg_active_company');
