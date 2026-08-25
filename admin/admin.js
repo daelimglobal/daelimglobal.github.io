@@ -30,12 +30,9 @@ if (saveGasBtn) {
 const saveGhBtn = document.getElementById('saveGhBtn');
 if (saveGhBtn) {
   saveGhBtn.addEventListener('click', () => {
-    const token  = (document.getElementById('s-gh-token').value  || '').trim();
-    const branch = (document.getElementById('s-gh-branch').value || 'gh-pages').trim();
-    const repo   = (document.getElementById('s-gh-repo').value   || '').trim();
-    localStorage.setItem(ghTokenKey(),  token);
-    localStorage.setItem('dg_gh_branch', branch);
-    if (repo) localStorage.setItem('dg_gh_repo', repo);
+    /* 저장소/브랜치는 회사별 고정값이라 여기서 건드리지 않음 — 토큰만 저장 */
+    const token = (document.getElementById('s-gh-token').value || '').trim();
+    localStorage.setItem(ghTokenKey(), token);
     loadGitHubSettings();
     showSaved('GitHub 동기화 설정 저장 완료 ✓');
   });
@@ -92,7 +89,7 @@ function getStoredPw() { return localStorage.getItem('dg_admin_pw') || DEFAULT_P
 
 /* ── 회사 전환 (대림글로벌 / 에벤에셀 — 한 관리자에서 두 홈페이지 관리) ── */
 const COMPANIES = {
-  daelim:   { label: '대림글로벌', emblem: '대림', repo: null, branch: null, keyPrefix: '',
+  daelim:   { label: '대림글로벌', emblem: '대림', repo: 'daelimglobal/daelimglobal.github.io', branch: 'gh-pages', keyPrefix: '',
               previewUrl: '../', hasSocial: true, projectLabel: '헨델프로젝트' },
   ebenezer: { label: '에벤에셀',   emblem: '에벤', repo: 'ebenezer-homepage/ebenezer-homepage.github.io', branch: 'main', keyPrefix: 'eb_',
               previewUrl: 'https://ebenezer-homepage.github.io/', hasSocial: false, projectLabel: '베토벤프로젝트' }
@@ -106,16 +103,11 @@ function companyKeyPrefix() { return COMPANIES[getActiveCompany()].keyPrefix; }
 /* GitHub 토큰은 회사(=GitHub 계정)마다 다르므로 회사별로 별도 저장 */
 function ghTokenKey() { return 'dg_' + companyKeyPrefix() + 'gh_token'; }
 /* 대림글로벌은 기존 자동감지/수동설정 저장소를 그대로 사용, 에벤에셀은 전용 저장소로 고정 */
-function getActiveRepo() {
-  const c = COMPANIES[getActiveCompany()];
-  if (c.repo) return c.repo;
-  return detectRepo() || (localStorage.getItem('dg_gh_repo') || '').trim();
-}
-function getActiveBranch() {
-  const c = COMPANIES[getActiveCompany()];
-  if (c.branch) return c.branch;
-  return (localStorage.getItem('dg_gh_branch') || 'gh-pages').trim();
-}
+/* 저장소/브랜치는 회사별로 고정값 사용 — localStorage 공유 키에 의존하지 않음
+   (예전에는 두 회사가 같은 localStorage 키를 공유해서, 한쪽에서 저장하면 다른 쪽 설정이
+   덮어써지는 문제가 있었음. 지금은 회사 선택에 따라 항상 고정된 값만 사용) */
+function getActiveRepo()   { return COMPANIES[getActiveCompany()].repo; }
+function getActiveBranch() { return COMPANIES[getActiveCompany()].branch; }
 /* 공개 홈페이지의 content.json — 대림글로벌은 같은 오리진, 에벤에셀은 별도 저장소이므로 raw.githubusercontent.com 사용 */
 function getPublicContentUrl() {
   const c = getActiveCompany();
