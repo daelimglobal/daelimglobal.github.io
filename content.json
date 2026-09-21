@@ -96,14 +96,19 @@
   ],
   "videos": [
     {
-      "id": 1777178929410,
-      "title": "충북 보은 30평(실내 26평+ 포치4평)",
-      "youtubeId": "1lDlo07ONVU"
-    },
-    {
       "id": 1777180088172,
       "title": "강화 35평(1층 26평+ 2층 9평)",
       "youtubeId": "x2anEgPMVt4"
+    },
+    {
+      "id": 1777182051101,
+      "title": "충남 보령 35평(전용부 26평+ 포치부 9평)",
+      "youtubeId": "Hue4TjPJbjY"
+    },
+    {
+      "id": 1777190000001,
+      "title": "창녕 35평",
+      "youtubeId": "aLVUST03UFc"
     },
     {
       "id": 1777180984480,
@@ -111,9 +116,19 @@
       "youtubeId": "13VC0DufZ2E"
     },
     {
-      "id": 1777182051101,
-      "title": "충남 보령 35평(전용부 26평+ 포치부 9평)",
-      "youtubeId": "Hue4TjPJbjY"
+      "id": 1777190000002,
+      "title": "양평 28평",
+      "youtubeId": "YAdwcUGLH24"
+    },
+    {
+      "id": 1777190000003,
+      "title": "부여 70평",
+      "youtubeId": "-uoAHLB4lZ4"
+    },
+    {
+      "id": 1777178929410,
+      "title": "충북 보은 30평(실내 26평+ 포치4평)",
+      "youtubeId": "1lDlo07ONVU"
     }
   ],
   "info": {
