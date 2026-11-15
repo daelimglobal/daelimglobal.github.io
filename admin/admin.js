@@ -992,7 +992,7 @@ function renderVideoList() {
   const items = load('videos', []);
   const list = document.getElementById('videoList');
   if (!items.length) { list.innerHTML = '<p style="color:#aaa;padding:20px;text-align:center">등록된 영상이 없습니다.</p>'; return; }
-  list.innerHTML = items.map(v => `
+  list.innerHTML = items.map((v, idx) => `
     <div class="item-row">
       <div class="item-thumb">
         ${v.youtubeId ? `<img src="https://img.youtube.com/vi/${v.youtubeId}/default.jpg" alt="${v.title}">` : '<span style="color:#aaa;font-size:12px;margin:auto">미등록</span>'}
@@ -1002,10 +1002,24 @@ function renderVideoList() {
         <span>${v.youtubeId ? 'ID: ' + v.youtubeId : '유튜브 ID 미입력'}</span>
       </div>
       <div class="item-actions">
+        <button class="btn-edit" onclick="moveVideo(${v.id},'up')" title="위로" ${idx === 0 ? 'disabled style="opacity:.3"' : ''}>▲</button>
+        <button class="btn-edit" onclick="moveVideo(${v.id},'down')" title="아래로" ${idx === items.length-1 ? 'disabled style="opacity:.3"' : ''}>▼</button>
         <button class="btn-edit" onclick="editVideo(${v.id})" title="편집">✏️</button>
         <button class="btn-del" onclick="deleteVideo(${v.id})" title="삭제">🗑</button>
       </div>
     </div>`).join('');
+}
+
+function moveVideo(id, direction) {
+  let items = load('videos', []);
+  const idx = items.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= items.length) return;
+  [items[idx], items[swapIdx]] = [items[swapIdx], items[idx]];
+  save('videos', items);
+  renderVideoList();
+  showSaved('순서가 변경됐습니다. 동기화 버튼을 눌러 반영하세요.');
 }
 
 document.getElementById('addVideoBtn').addEventListener('click', () => {
