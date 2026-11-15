@@ -30,9 +30,12 @@ if (saveGasBtn) {
 const saveGhBtn = document.getElementById('saveGhBtn');
 if (saveGhBtn) {
   saveGhBtn.addEventListener('click', () => {
-    /* 저장소/브랜치는 회사별 고정값이라 여기서 건드리지 않음 — 토큰만 저장 */
-    const token = (document.getElementById('s-gh-token').value || '').trim();
-    localStorage.setItem(ghTokenKey(), token);
+    const token  = (document.getElementById('s-gh-token').value  || '').trim();
+    const branch = (document.getElementById('s-gh-branch').value || 'gh-pages').trim();
+    const repo   = (document.getElementById('s-gh-repo').value   || '').trim();
+    localStorage.setItem('dg_gh_token',  token);
+    localStorage.setItem('dg_gh_branch', branch);
+    if (repo) localStorage.setItem('dg_gh_repo', repo);
     loadGitHubSettings();
     showSaved('GitHub 동기화 설정 저장 완료 ✓');
   });
@@ -86,43 +89,12 @@ window.copyGasCode = function() {
 const DEFAULT_PW = 'daelim2024';
 
 function getStoredPw() { return localStorage.getItem('dg_admin_pw') || DEFAULT_PW; }
-
-/* ── 회사 전환 (대림글로벌 / 에벤에셀 — 한 관리자에서 두 홈페이지 관리) ── */
-const COMPANIES = {
-  daelim:   { label: '대림글로벌', emblem: '대림', repo: 'daelimglobal/daelimglobal.github.io', branch: 'gh-pages', keyPrefix: '',
-              previewUrl: '../', hasSocial: true, projectLabel: '헨델프로젝트' },
-  ebenezer: { label: '에벤에셀',   emblem: '에벤', repo: 'ebenezer-homepage/ebenezer-homepage.github.io', branch: 'main', keyPrefix: 'eb_',
-              previewUrl: 'https://ebenezer-homepage.github.io/', hasSocial: false, projectLabel: '베토벤프로젝트' }
-};
-function getActiveCompany() {
-  const c = localStorage.getItem('dg_active_company');
-  return COMPANIES[c] ? c : 'daelim';
-}
-function setActiveCompany(c) { if (COMPANIES[c]) localStorage.setItem('dg_active_company', c); }
-function companyKeyPrefix() { return COMPANIES[getActiveCompany()].keyPrefix; }
-/* GitHub 토큰은 회사(=GitHub 계정)마다 다르므로 회사별로 별도 저장 */
-function ghTokenKey() { return 'dg_' + companyKeyPrefix() + 'gh_token'; }
-/* 대림글로벌은 기존 자동감지/수동설정 저장소를 그대로 사용, 에벤에셀은 전용 저장소로 고정 */
-/* 저장소/브랜치는 회사별로 고정값 사용 — localStorage 공유 키에 의존하지 않음
-   (예전에는 두 회사가 같은 localStorage 키를 공유해서, 한쪽에서 저장하면 다른 쪽 설정이
-   덮어써지는 문제가 있었음. 지금은 회사 선택에 따라 항상 고정된 값만 사용) */
-function getActiveRepo()   { return COMPANIES[getActiveCompany()].repo; }
-function getActiveBranch() { return COMPANIES[getActiveCompany()].branch; }
-/* 공개 홈페이지의 content.json — 대림글로벌은 같은 오리진, 에벤에셀은 별도 저장소이므로 raw.githubusercontent.com 사용 */
-function getPublicContentUrl() {
-  const c = getActiveCompany();
-  if (c === 'ebenezer') {
-    return `https://raw.githubusercontent.com/${COMPANIES.ebenezer.repo}/${COMPANIES.ebenezer.branch}/content.json`;
-  }
-  return new URL('../content.json', location.href).href;
-}
-
 function save(key, val) {
-  localStorage.setItem('dg_' + companyKeyPrefix() + key, JSON.stringify(val));
+  localStorage.setItem('dg_' + key, JSON.stringify(val));
   scheduleGitHubCommit();
 }
 function load(key, fallback) {
-  try { const v = localStorage.getItem('dg_' + companyKeyPrefix() + key); return v ? JSON.parse(v) : fallback; } catch(e) { return fallback; }
+  try { const v = localStorage.getItem('dg_' + key); return v ? JSON.parse(v) : fallback; } catch(e) { return fallback; }
 }
 
 /* ── GitHub content.json 동기화 (모든 기기 공유 핵심) ── */
@@ -145,9 +117,9 @@ function detectRepo() {
 }
 
 async function commitContentToGitHub() {
-  const token  = (localStorage.getItem(ghTokenKey())  || '').trim();
-  const branch = getActiveBranch();
-  const repo   = getActiveRepo();
+  const token  = (localStorage.getItem('dg_gh_token')  || '').trim();
+  const branch = (localStorage.getItem('dg_gh_branch') || 'gh-pages').trim();
+  const repo   = detectRepo() || (localStorage.getItem('dg_gh_repo') || '').trim();
   if (!token || !repo) return { ok: false, error: '토큰 또는 저장소가 설정되지 않았습니다.' };
 
   const base = `https://api.github.com/repos/${repo}`;
@@ -169,11 +141,10 @@ async function commitContentToGitHub() {
       if (rawResp.ok) { try { baseContent = await rawResp.json(); } catch(e) {} }
     }
 
-    /* 2. localStorage 데이터로 덮어쓰기 (현재 선택된 회사의 데이터만) */
+    /* 2. localStorage 데이터로 덮어쓰기 */
     const content = Object.assign({}, baseContent);
-    const prefix = companyKeyPrefix();
     ['portfolio','social','videos','info','customText','images','beethoven'].forEach(k => {
-      const v = localStorage.getItem('dg_' + prefix + k);
+      const v = localStorage.getItem('dg_' + k);
       if (v !== null) { try { content[k] = JSON.parse(v); } catch(e) {} }
     });
 
@@ -237,7 +208,7 @@ async function commitContentToGitHub() {
 
 let _commitTimer = null;
 function scheduleGitHubCommit() {
-  const token = (localStorage.getItem(ghTokenKey()) || '').trim();
+  const token = (localStorage.getItem('dg_gh_token') || '').trim();
   if (!token) {
     showSaved('저장됨 (GitHub 토큰 미설정 — 기본설정 탭에서 토큰 입력 필요)');
     return;
@@ -264,13 +235,12 @@ function scheduleGitHubCommit() {
 /* content.json에서 최신 데이터 로드 (관리자 패널 동기화) */
 async function loadContentJSON() {
   try {
-    const url = getPublicContentUrl();
+    const url = new URL('../content.json', location.href).href;
     const resp = await fetch(url, { cache: 'no-store' });
     if (!resp.ok) return false;
     const data = await resp.json();
-    const prefix = companyKeyPrefix();
     ['portfolio','social','videos','info','customText','images','beethoven'].forEach(k => {
-      if (data[k] !== undefined) localStorage.setItem('dg_' + prefix + k, JSON.stringify(data[k]));
+      if (data[k] !== undefined) localStorage.setItem('dg_' + k, JSON.stringify(data[k]));
     });
     return true;
   } catch(e) { return false; }
@@ -280,12 +250,12 @@ function loadGitHubSettings() {
   const tokenEl  = document.getElementById('s-gh-token');
   const branchEl = document.getElementById('s-gh-branch');
   const repoEl   = document.getElementById('s-gh-repo');
-  if (tokenEl)  tokenEl.value  = localStorage.getItem(ghTokenKey())  || '';
-  if (branchEl) branchEl.value = getActiveBranch();
-  if (repoEl)   repoEl.value   = getActiveRepo();
+  if (tokenEl)  tokenEl.value  = localStorage.getItem('dg_gh_token')  || '';
+  if (branchEl) branchEl.value = localStorage.getItem('dg_gh_branch') || 'gh-pages';
+  if (repoEl)   repoEl.value   = detectRepo() || localStorage.getItem('dg_gh_repo') || '';
   const badge = document.getElementById('gh-status-badge');
   if (badge) {
-    const hasToken = !!(localStorage.getItem(ghTokenKey()) || '').trim();
+    const hasToken = !!(localStorage.getItem('dg_gh_token') || '').trim();
     badge.textContent = hasToken ? '✓ 설정됨' : '미설정';
     badge.style.cssText = hasToken ? 'color:#3D6B4F;font-size:12px;font-weight:700;margin-left:6px' : 'color:#e05252;font-size:12px;margin-left:6px';
   }
@@ -338,10 +308,10 @@ document.getElementById('saveBeethovenBtn').addEventListener('click', async () =
   const ytUrl = (document.getElementById('bh-youtube-url') && document.getElementById('bh-youtube-url').value.trim()) || '';
   const bData = { images: imgs, youtubeUrl: ytUrl };
 
-  localStorage.setItem('dg_' + companyKeyPrefix() + 'beethoven', JSON.stringify(bData));
+  localStorage.setItem('dg_beethoven', JSON.stringify(bData));
 
   const msgEl = document.getElementById('beethoven-save-msg');
-  const token = (localStorage.getItem(ghTokenKey()) || '').trim();
+  const token = (localStorage.getItem('dg_gh_token') || '').trim();
 
   if (!token) {
     if (msgEl) {
@@ -362,7 +332,7 @@ document.getElementById('saveBeethovenBtn').addEventListener('click', async () =
       : '❌ GitHub 저장 실패 — 기본설정에서 토큰·브랜치를 확인해주세요.';
     setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 8000);
   }
-  showSaved(ok ? `${COMPANIES[getActiveCompany()].projectLabel} 저장 완료 ✓` : '저장 실패 ✗');
+  showSaved(ok ? '헨델프로젝트 저장 완료 ✓' : '저장 실패 ✗');
 });
 
 /* ── 기본 데이터 ── */
@@ -388,7 +358,6 @@ document.getElementById('loginForm').addEventListener('submit', e => {
   if (pw === getStoredPw()) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminApp').style.display = 'flex';
-    applyCompanyUI();
     initAdmin();
   } else {
     document.getElementById('loginError').textContent = '비밀번호가 올바르지 않습니다.';
@@ -414,8 +383,7 @@ document.querySelectorAll('.sb-item').forEach(btn => {
     if (tab === 'inquiries') renderInquiryList();
     if (tab === 'handel') loadBeethovenSettings();
     if (tab === 'visitors') loadVisitorStats();
-    const c = COMPANIES[getActiveCompany()];
-    const titles = { dashboard:'대시보드', visitors:'방문자 통계', inquiries:'상담 신청 내역', images:'이미지 관리', handel: c.projectLabel + ' 이미지', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
+    const titles = { dashboard:'대시보드', visitors:'방문자 통계', inquiries:'상담 신청 내역', images:'이미지 관리', handel:'헨델프로젝트 이미지', portfolio:'시공사례 관리', social:'사회공헌 관리', videos:'동영상 관리', content:'텍스트 편집', settings:'기본 설정' };
     document.getElementById('tabTitle').textContent = titles[tab] || tab;
   });
 });
@@ -427,78 +395,6 @@ function showSaved(msg = '저장되었습니다 ✓') {
   clearTimeout(el._t);
   el._t = setTimeout(() => el.textContent = '', 2500);
 }
-
-/* ── 회사 전환 UI 적용 (사이드바 라벨, 사회공헌 탭/텍스트 노출 여부, 헨델→베토벤 문구) ── */
-function applyCompanyUI() {
-  const key = getActiveCompany();
-  const c = COMPANIES[key];
-
-  const emblemEl = document.getElementById('sbEmblem');
-  const nameEl   = document.getElementById('sbCompanyName');
-  if (emblemEl) emblemEl.textContent = c.emblem;
-  if (nameEl)   nameEl.textContent   = c.label;
-
-  const sel = document.getElementById('companySelect');
-  if (sel) sel.value = key;
-
-  /* 미리보기 링크 (사이드바 하단 + 상단바) */
-  [document.getElementById('sbPreviewLink'), document.getElementById('topPreviewLink')].forEach(a => {
-    if (a) a.href = c.previewUrl;
-  });
-
-  /* 사회공헌 탭·대시보드 카드·텍스트편집 블록 노출 여부 */
-  const socialTabBtn   = document.getElementById('sbSocialTab');
-  const socialTabPanel = document.getElementById('tab-social');
-  const socialDashCard = document.getElementById('dashSocialCard');
-  const socialFgNav    = document.getElementById('fgNavSocial');
-  const socialTextBlk  = document.getElementById('csSocialTextBlock');
-  [socialTabBtn, socialDashCard, socialFgNav, socialTextBlk].forEach(el => {
-    if (el) el.style.display = c.hasSocial ? '' : 'none';
-  });
-  if (socialTabPanel && !c.hasSocial) {
-    socialTabPanel.classList.remove('active');
-    socialTabPanel.style.display = 'none';
-    /* 사회공헌 탭이 선택되어 있었다면 대시보드로 전환 */
-    if (socialTabBtn && socialTabBtn.classList.contains('active')) {
-      document.querySelector('.sb-item[data-tab=dashboard]').click();
-    }
-  } else if (socialTabPanel) {
-    socialTabPanel.style.display = '';
-  }
-
-  /* 헨델프로젝트 ↔ 베토벤프로젝트 문구 전환 */
-  const label = c.projectLabel;
-  const sbHandel = document.getElementById('sbHandelTab');
-  if (sbHandel) sbHandel.textContent = '🏛️ ' + label + ' 이미지';
-  const imgNote = document.getElementById('imgHandelNote');
-  if (imgNote) imgNote.textContent = label + ' 섹션 이미지는 전용 메뉴에서 관리하세요.';
-  const imgBtn = document.getElementById('imgToHandelBtn');
-  if (imgBtn) imgBtn.textContent = '🏛️ ' + label + ' 이미지 관리하기 →';
-  const notice = document.getElementById('handelNotice');
-  if (notice) notice.innerHTML = `🏛️ <strong>${label} 이미지:</strong> 홈페이지 ${label} 섹션 내용 바로 아래에 표시되는 사진 최대 6장을 관리합니다. 저장 후 PC·모바일 모든 기기에 반영됩니다.`;
-  const h3 = document.getElementById('handelSectionH3');
-  if (h3) h3.textContent = '🏛️ ' + label + ' 소개 사진 (최대 6장)';
-  const lblNav = document.getElementById('lblNavBeethoven');
-  if (lblNav) lblNav.textContent = label;
-  const ctNavInput = document.getElementById('ct-navBeethoven');
-  if (ctNavInput) ctNavInput.placeholder = label;
-
-  /* 에벤에셀은 전용 저장소로 고정 — 저장소/브랜치 수동 입력 비활성화 */
-  const branchEl = document.getElementById('s-gh-branch');
-  const repoEl   = document.getElementById('s-gh-repo');
-  if (branchEl) branchEl.disabled = !!c.branch;
-  if (repoEl)   repoEl.disabled   = !!c.repo;
-
-  const tabTitleEl = document.getElementById('tabTitle');
-  if (tabTitleEl && tabTitleEl.textContent === '헨델프로젝트 이미지') tabTitleEl.textContent = label + ' 이미지';
-}
-
-document.getElementById('companySelect').addEventListener('change', e => {
-  setActiveCompany(e.target.value);
-  applyCompanyUI();
-  initAdmin();
-  showSaved(`${COMPANIES[getActiveCompany()].label} 관리 화면으로 전환했습니다`);
-});
 
 /* ── 관리자 초기화 ── */
 function initAdmin() {
@@ -934,7 +830,7 @@ document.getElementById('addPortfolioBtn').addEventListener('click', () => {
   document.getElementById('portfolioFormTitle').textContent = '시공사례 추가';
   _pfClearForm();
   const warn = document.getElementById('pf-gh-warning');
-  if (warn) warn.style.display = (localStorage.getItem(ghTokenKey()) || '').trim() ? 'none' : 'block';
+  if (warn) warn.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
   document.getElementById('portfolioForm').style.display = 'block';
   document.getElementById('portfolioForm').scrollIntoView({ behavior:'smooth' });
 });
@@ -958,7 +854,7 @@ function editPortfolio(id) {
   setPreview('pf-preview-3', p.photo3   || '');
   setPreview('pf-preview-4', p.photo4   || '');
   const warn = document.getElementById('pf-gh-warning');
-  if (warn) warn.style.display = (localStorage.getItem(ghTokenKey()) || '').trim() ? 'none' : 'block';
+  if (warn) warn.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
   document.getElementById('portfolioForm').style.display = 'block';
   document.getElementById('portfolioForm').scrollIntoView({ behavior:'smooth' });
 }
@@ -1096,7 +992,7 @@ function renderVideoList() {
   const items = load('videos', []);
   const list = document.getElementById('videoList');
   if (!items.length) { list.innerHTML = '<p style="color:#aaa;padding:20px;text-align:center">등록된 영상이 없습니다.</p>'; return; }
-  list.innerHTML = items.map(v => `
+  list.innerHTML = items.map((v, idx) => `
     <div class="item-row">
       <div class="item-thumb">
         ${v.youtubeId ? `<img src="https://img.youtube.com/vi/${v.youtubeId}/default.jpg" alt="${v.title}">` : '<span style="color:#aaa;font-size:12px;margin:auto">미등록</span>'}
@@ -1106,10 +1002,24 @@ function renderVideoList() {
         <span>${v.youtubeId ? 'ID: ' + v.youtubeId : '유튜브 ID 미입력'}</span>
       </div>
       <div class="item-actions">
+        <button class="btn-edit" onclick="moveVideo(${v.id},'up')" title="위로" ${idx === 0 ? 'disabled style="opacity:.3"' : ''}>▲</button>
+        <button class="btn-edit" onclick="moveVideo(${v.id},'down')" title="아래로" ${idx === items.length-1 ? 'disabled style="opacity:.3"' : ''}>▼</button>
         <button class="btn-edit" onclick="editVideo(${v.id})" title="편집">✏️</button>
         <button class="btn-del" onclick="deleteVideo(${v.id})" title="삭제">🗑</button>
       </div>
     </div>`).join('');
+}
+
+function moveVideo(id, direction) {
+  let items = load('videos', []);
+  const idx = items.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= items.length) return;
+  [items[idx], items[swapIdx]] = [items[swapIdx], items[idx]];
+  save('videos', items);
+  renderVideoList();
+  showSaved('순서가 변경됐습니다. 동기화 버튼을 눌러 반영하세요.');
 }
 
 document.getElementById('addVideoBtn').addEventListener('click', () => {
@@ -1462,9 +1372,9 @@ setupFileUploadExtra('sf-file3', 'sf-img3-final', 'sf-preview3');
    헨델프로젝트 이미지 파일 업로드
    ========================================== */
 async function uploadImageToGitHub(file) {
-  const token  = (localStorage.getItem(ghTokenKey())  || '').trim();
-  const branch = getActiveBranch();
-  const repo   = getActiveRepo();
+  const token  = (localStorage.getItem('dg_gh_token')  || '').trim();
+  const branch = (localStorage.getItem('dg_gh_branch') || 'gh-pages').trim();
+  const repo   = detectRepo() || (localStorage.getItem('dg_gh_repo') || '').trim();
   if (!token || !repo) return { url: null, error: '토큰 또는 저장소 미설정' };
 
   const base64 = await new Promise((resolve, reject) => {
@@ -1512,7 +1422,7 @@ async function handleHandelFileUpload(file, idx) {
   setPreview('bh-preview-' + idx, objectUrl);
   if (statusEl) { statusEl.style.color = '#888'; statusEl.textContent = '📤 업로드 중...'; }
 
-  const token = (localStorage.getItem(ghTokenKey()) || '').trim();
+  const token = (localStorage.getItem('dg_gh_token') || '').trim();
 
   if (!token) {
     const reader = new FileReader();
@@ -1564,7 +1474,7 @@ window.clearHandelImg = function(idx) {
 
 function setupHandelUploads() {
   const warningEl = document.getElementById('handel-gh-warning');
-  if (warningEl) warningEl.style.display = (localStorage.getItem(ghTokenKey()) || '').trim() ? 'none' : 'block';
+  if (warningEl) warningEl.style.display = (localStorage.getItem('dg_gh_token') || '').trim() ? 'none' : 'block';
 
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(idx => {
     const fileInput = document.getElementById('handel-file-' + idx);
@@ -1602,7 +1512,7 @@ async function handlePortfolioFileUpload(file, num) {
   setPreview(previewId, objectUrl);
   if (statusEl) { statusEl.style.color = '#888'; statusEl.textContent = '📤 업로드 중...'; }
 
-  const token = (localStorage.getItem(ghTokenKey()) || '').trim();
+  const token = (localStorage.getItem('dg_gh_token') || '').trim();
 
   if (!token) {
     const reader = new FileReader();
